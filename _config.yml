@@ -18,13 +18,13 @@ minimal_mistakes_skin    : "air" # "air", "aqua", "contrast", "dark", "dirt", "n
 locale                   : "en-US"
 rtl                      : # true, false (default) # turns direction of the page into right to left for RTL languages
 title                    : "youhgo's blog"
-title_separator          : "-"
+title_separator          : #"-"
 subtitle                 : # site tagline that appears below site title in masthead
 name                     : "youhgo"
 description              : "Just my blog about cyber and stuff."
 url                      : # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : # the subpath of your site, e.g. "/blog"
-repository               : "https://github.com/youhgo"# GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
+repository               : "https://github.com/youhgo" # GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
 teaser                   : # path of fallback teaser image, e.g. "/assets/images/500x300.png"
 logo                     : "/assets/images/malice.png"
 masthead_title           : # overrides the website title displayed in the masthead, use " " for no title
