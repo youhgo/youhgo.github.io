@@ -1,5 +1,11 @@
 # How to Use DOPP
 
+Usefull links:
+* DOPP is available [here](https://github.com/youhgo/DOPP)
+* How to install DOPP, tutorial [here](https://youhgo.github.io/DOPP-how-to-install-EN/)
+* How to use DOPP, tutorial [here](https://youhgo.github.io/DOPP-how-to-use-EN/)
+* DOPP result architecture, explained [here](https://youhgo.github.io/DOPP-Results/)
+
 DOPP is really easy to use thanks to the API
 
 ## DOPP API

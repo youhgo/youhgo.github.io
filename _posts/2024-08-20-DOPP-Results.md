@@ -47,7 +47,8 @@ DomainController_FOREST_2024-08-18T04:16:47
     └── parsed_for_human/ #(All the above formated to an ultra readable format)
 ```
 
-The folder "Parsed_for_human" contains all the artefact parsed in an ultra readable csv format :|DATE|TIME|ID|ETC|ETC
+The folder "Parsed_for_human" contains all the artefact parsed in an ultra readable csv format: |DATE|TIME|ID|ETC|ETC
+
 It contains:
 ```bash
 parsed_for_human

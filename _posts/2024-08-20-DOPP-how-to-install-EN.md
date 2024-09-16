@@ -4,7 +4,11 @@ classes: wide
 
 # Dfir ORC Parser Project - Install
 
-DOPP is available [here](https://github.com/youhgo/DOPP)
+Usefull links:
+* DOPP is available [here](https://github.com/youhgo/DOPP)
+* How to install DOPP, tutorial [here](https://youhgo.github.io/DOPP-how-to-install-EN/)
+* How to use DOPP, tutorial [here](https://youhgo.github.io/DOPP-how-to-use-EN/)
+* DOPP result architecture, explained [here](https://youhgo.github.io/DOPP-Results/)
 
 ## Prerequisite
 
