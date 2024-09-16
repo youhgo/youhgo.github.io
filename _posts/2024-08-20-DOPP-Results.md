@@ -2,102 +2,84 @@
 classes: wide
 ---
 
-# Dfir ORC Parser Project
+# Dfir ORC Parser Project : RESULTS
 
 DOPP is available [here](https://github.com/youhgo/DOPP)
 
-## What is DOPP ?
-
-The purpose of DOPP is to provide the necessary tools for parsing Windows artifacts (event logs, MFT, registry hives, amcache, etc.) as part of a digital forensics investigation.
-Dopp produces extremely simple and readable results, allowing analysts to find the information they need directly.
-
-Dopp was designed to process archives provided by the [DFIR-ORC](https://github.com/dfir-orc) collection tool from ANSSI but will be compatible with all formats soon.
-
-DOPP is:
-
-* Fast: ~5 minutes to process a 500MB archive (excluding PLASO);
-* Easily installable with Docker;
-* Simple to use.
+Once DOPP have finshed the parsing, they will be available in the share folder you provided in the docker-compose.yml config file.
 
 
-Here is an example of the output format provided by DOPP:
-Extract from the "user_logon_id4624.csv" file listing all successful logons to the machine (Security.evtx -> event id 4624).
+## DOPP results architecture
+
+DOPP main result architecture is made like so
 
 ```bash
-user_logon_id4624.csv
-Date|Time|event_code|subject_user_name|target_user_name|ip_address|ip_port|logon_type
-2019-09-22|22:45:00|4624|-|Administrator|10.10.10.7|10419|3
-2019-09-22|22:45:03|4624|-|EXCH01$|10.10.10.7|10432|3
-2019-09-22|22:45:06|4624|-|Administrator|10.10.10.7|10439|3
-2019-09-22|22:45:06|4624|-|EXCH01$|10.10.10.7|10443|3
-2019-09-22|22:45:31|4624|-|FOREST$|::1|52506|3
+Your_Share_Folder
+├── depot # folder where raw orc archive are stored after beeing uploaded by an analyst through the api
+└── work # folder where all the artefact will be parsed
+    ├── execution_logs # folder contaning all the logs relative to DOPP
+    ├── casename # Folder named after the casename provided through the api, all results related to this casename will be stored here
+        ├── WorkStation_DESKTOP-9I162HO_new_2024-09-08T23:45:46 # Folder containing all result provided by DOPP when parsing archive provided trough the api
+        ├── DomainController_FOREST.htb.local_2024-09-16T05:47:18 # Folder containing all result provided by DOPP when parsing archive provided trough the api
+    └── test # Folder named after the casename provided through the api (here casenmae = test), all results related to this casename will be stored here
+        └── WorkStation_DESKTOP-9I162HO_new_2024-09-16T05:33:48 # Folder containing all result provided by DOPP when parsing archive provided trough the api
 ```
 
-## What does DOPP do ? :
+## Parsed results of a DFIR ORC Archive:
 
-DOPP va : 
-* Extract archive provided by DFIR-ORC;
-* Parse every artefact (MFT, Registry hives, Amcache, Event logs)
-* Produce ultra readable results
-
-Dopp use externals tools listed here: 
-
-* [SRUM PARSER](https://github.com/MarkBaggett/srum-dump)
-* [PREFETCH PARSER](http://www.505forensics.com)
-* [PLASO](https://github.com/log2timeline/plaso)
-* [EVTX DUMP](https://github.com/0xrawsec/golang-evtx)
-* [ESE-analyst](https://github.com/MarkBaggett/ese-analyst)
-* [analyzeMFT](https://github.com/rowingdude/analyzeMFT)
-* [RegRipper](https://github.com/keydet89/RegRipper3.0)
-* [MaximumPlasoParser](https://github.com/youhgo/maximumPlasoTimelineParser)
-
-## How does DOPP Work ? :
-
-Dopp was designed to be executed on a server, allowing it to be used by all analysts and to share results. However, it can also be launched on an analyst's machine without any issues. DOPP must be used with DOCKER.
-
-DOPP consists of two components:
-
-* A web API;
-* A processing part.
-
-The web API allows you to:
-
-* Send the ORC archive to be processed;
-* Consult the progress of the processing via logs.
-
-The processing part is responsible for launching all the tools and parsing the results. They are written to a shared folder via the Docker configuration.
-
-
-
-## Results:
-
-DOPP result architecture is made like so : 
-
-```bash
-DomainController_FOREST_2024-08-18T04:16:47
-├── extracted/ (Raw extracted file of DFIR ORC Archive)
-└── parsed/ (Results produce by all the tool while parsing the artefatcs)
-```
-
-More details: 
+The parsed result of a DFIR ORC archive looks like so
 
 ```bash
 DomainController_FOREST_2024-08-18T04:16:47
 └── parsed
-    ├── debug/ (all execution logs of dfir orc)
-    ├── events/ (all EVTX events converted to JSON)
-    ├── hives/ (all registry hives parsed with regripper and regipy )
-    ├── lnk/ (all lnk file converted to json)
-    ├── mft/ (USN journal and MFT file converted to CSV)
-    ├── network/ (all network related output converted to CSV or txt)
-    ├── powershell/ (powershell history and more)
-    ├── prefetch/ (all prefetch converted to csv/json)
-    ├── process/ (all process info converted to csv)
-    ├── SRUM/ (all srudb.dat converted to csv)
-    ├── textLogs/ (all log that have a txt format)
-    ├── timeline/ (timeline created by PLASO (json + csv)
-    └── parsed_for_human/ (All the above formated to an ultra readable format)
+    ├── debug/ #(all execution logs of dfir orc)
+    ├── events/ #(all EVTX events converted to JSON)
+    ├── hives/ #(all registry hives parsed with regripper and regipy )
+    ├── lnk/ #(all lnk file converted to json)
+    ├── mft/ #(USN journal and MFT file converted to CSV)
+    ├── network/ #(all network related output converted to CSV or txt)
+    ├── powershell/ #(powershell history and more)
+    ├── prefetch/ #(all prefetch converted to csv/json)
+    ├── process/ #(all process info converted to csv)
+    ├── SRUM/ #(all srudb.dat converted to csv)
+    ├── textLogs/ #(all log that have a txt format)
+    ├── timeline/ #(timeline created by PLASO (json + csv)
+    └── parsed_for_human/ #(All the above formated to an ultra readable format)
 ```
+
+The folder "Parsed_for_human" contains all the artefact parsed in an ultra readable csv format :|DATE|TIME|ID|ETC|ETC
+It contains:
+```bash
+parsed_for_human
+├── Amcache.hve_regpy.csv 
+├── Amcache.hve_regpy.json
+├── amcache_rr.csv 
+├── autorun_sysinternals_parsed.csv 
+├── bits.csv 
+├── lnk_parsed.csv 
+├── local_rdp.csv  
+├── mft_parsed.csv
+├── netstat-parsed.csv 
+├── new_proc_file_id4688.csv 
+├── new_service_id7045.csv
+├── powershell.csv
+├── powershell_script.csv
+├── process_autoruns_parsed.csv
+├── process_info_parsed.csv
+├── process_timeline_parsed.csv
+├── remote_rdp.csv
+├── task_scheduler.csv
+├── tcpvcon-parsed.csv
+├── user_explicit_logon_id4648.csv
+├── user_failed_logon_id4625.csv
+├── user_logon_id4624.csv
+├── user_special_logon_id4672.csv
+├── usnjrnl_parsed.csv
+├── windefender.csv
+├── windows_start_stop.csv
+└── wmi.csv
+```
+
 
 Here's an example of the results. We can directly see:
 
@@ -110,7 +92,7 @@ Here's an example of the results. We can directly see:
 
 
 ```bash
- rg -i "2021-01-07\|03.(3|4|5)" user_logon_id4624.csv new_service_id7045.csv amcache.csv app_compat_cache.csv powershell.csv windefender.csv 
+ rg -i "2021-01-07\|03.(3|4|5)" user_logon_id4624.csv new_service_id7045.csv Amcache.hve_regpy.csv powershell.csv windefender.csv 
 windefender.csv
 
 2021-01-07|03:32:30|1116 - Detection|VirTool:Win32/MSFPsExecCommand|Severe|NT AUTHORITY\SYSTEM|Unknown|CmdLine:_C:\Windows\System32\cmd.exe /Q /c echo cd ^> \\127.0.0.1\C$\__output 2^>^&1 > C:\Windows\TEMP\execute.bat & C:\Windows\system32\cmd.exe /Q /c C:\Windows\TEMP\execute.bat & del C:\Windows\TEMP\execute.bat|Not Applicable
@@ -137,15 +119,6 @@ user_logon_id4624.csv
 2021-01-07|03:32:45|4624|-|GRAAL$|-|-|3
 2021-01-07|03:32:57|4624|-|arthur|192.168.88.137|54140|3
 ```
-
-
-
-
-## Notes
-
-DOPP is still in beta, more tools and functionnalities will be available with time
-If you encounter any problem or if you have any request, feel free to contact me !
-
 
 
 

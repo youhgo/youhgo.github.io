@@ -85,17 +85,6 @@ curl -X GET -k https://dopp.localhost/ | jq
 }
 ```
 
-## Use DOPP :
-
-Now that the web api of DOPP is online, you should be able to send an archive for parsing.
-
-The api url to send an archive is : https://DOPP.localhost/api/parse/parse_archive.
-
-Here an exemple to send an archive
-```bash
-curl -X POST -k https://DOPP.localhost/api/parse/parse_archive -F file=@"/home/hro/Documents/cyber/working_zone/archive_orc/DFIR-ORC_WorkStation_DESKTOP-9I162HO_new.7z" -F json='{"caseName":"forest"}' | jq
-```
-
 DOPP is now ready to go !
 
-To learn How to use DOPP, tutorial is [here]()
+To learn How to use DOPP, tutorial is [here](https://youhgo.github.io/DOPP-how-to-use-EN/)

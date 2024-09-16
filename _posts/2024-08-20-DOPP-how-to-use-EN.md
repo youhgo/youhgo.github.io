@@ -44,6 +44,10 @@ By default, all tools are set to 1.
 For exemple, send an archive through Curl :
 ```bash
 curl -X POST -k https://DOPP.localhost/api/parse/parse_archive -F file=@"/home/hro/Documents/cyber/working_zone/archive_orc/PC1.7z" -F json='{"caseName":"test"}'
+```
+
+Response :
+```bash
 {
   "debugLogUrl":"https://DOPP.localhost/api/debug_log/b16b2be6-0c04-4540-96e9-ab922c27b2f7",
   "message":"your parsing request has been send to queue",
