@@ -42,7 +42,9 @@ Finaly, you will need to download the [DFIR-ORC Config](https://github.com/DFIR-
 
 ## Configuring:
 
-Go into the folder of the DFIR-ORC-CONFIG repo you just donwloaded :
+### prerequisites
+
+Go into the folder of the DFIR-ORC-CONFIG repo you just downloaded :
 
 it should be : "dfir-orc-config-master/" and you should have the following inside :
 
@@ -64,7 +66,7 @@ d-----        06/06/2024     12:44                tools
 
 In the "tools" dir, copy all the tools we've downloaded earlier.
 
-The tools dir should contain :
+In the end the "tools\"" dir should contain :
 ```bash
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
@@ -77,29 +79,42 @@ Mode                 LastWriteTime         Length Name
 -a----        11/04/2023     18:10         202632 tcpvcon.exe
 ```
 
+### Configuring the embeded tools:
+
 Next, go into the "config\" directory:
 
-In the file "DFIR-ORC_embed.xml", remove the line :
+Edit the file "DFIR-ORC_embed.xml" and remove the line :
 ```xml
 		<file name="dumpit" path=".\tools\DumpIt.exe" />
 		<file name="winpmem" path=".\tools\winpmem.exe" />
 ```
 
-Those line indicate to ORC-CONFIG to embed the tools DumpIt and Winpmem into the ORC binary. Since we don't wanna do a ram memory dump, we don't need this tools.
-If you still wanna do a mem dump, keep those 2 lines, and you will need to download DumpIt.exe and winpmem.exe and place them in the "tools\"" directory
+Those line indicate to ORC-CONFIG to embed the tools "DumpIt" and "Winpmem" into the ORC binary. Since we don't wanna do a ram memory dump, we don't need this tools.
+If you still wanna do a mem dump, keep those 2 lines, and you will need to download DumpIt.exe and winpmem.exe and place them in the "tools\"" directory.
 
-Or you can just replace the file "DFIR-ORC_embed.xml" by the one i use > [this one](https://github.com/youhgo/DOPP/blob/master/ressources/DFIR-ORC_embed.xml)
+I already made a "DFIR-ORC_embed.xml" file ready to go [here](https://github.com/youhgo/DOPP/blob/master/ressources/DFIR-ORC_embed.xml).
 
-Now you will need to change the DFIR ORC config file so that all the results are stored in one single archive.
+
+### General configuration:
+Still into the "config\" directory, we will edit the general config of DFIR-ORC
+
+You are free to configure DFIR-ORC to gather artefacts the way you want.
+With the default config ORC will do some really time consuming operation and the process can last sometime 1 hour and more. Moreover the result are stored in multiples archives making the process more complexe.
+
+Thats why we will be using my configuration which:
+* is fast (~5mins);
+* collect all necessary artefacts to be able to do a complete investigation;
+* create one single result archive to retrieve the result easily .
 
 This is the "DFIR-ORC_config.xml" file that i use > [this one](https://github.com/youhgo/DOPP/blob/master/ressources/DFIR-ORC_config.xml)
-I suggest you replace the original with this one.
+You need replace the original one with this one.
 
-This configuration will tell orc to collect only the necessary files and store all the results in a single archive.
-In the default config ORC can be do really slow and the result are "messy"
+I won't explain everything here, if you want to know more about DFIR-ORC configuration please go [here](https://dfir-orc.github.io/configuration.html)
 
 
-Now go back to the "dfir-orc-config-master/" with powershell and launch the ".\configure.ps1" script.
+### Final Step
+
+Now go back to the "dfir-orc-config-master/". Using powershell, launch the ".\configure.ps1" script.
 
 Once the script is finished, you will have a configured and ready to launch DFIR-ORC binary in the output directory:
 ```bash
@@ -111,7 +126,10 @@ Mode                 LastWriteTime         Length Name
 -a----        16/08/2024     11:23        8225280 DFIR-Orc.exe
 ```
 
+## Launch ORC
+
 To launch orc and do a collect just execute the orc binary as an admin on the target machine.
+
 Once finished, ORC will produce an archive containing all the precious artefacts needed for the case.
 You can now upload this archive to DOPP and begin your forensic investigation !
 
