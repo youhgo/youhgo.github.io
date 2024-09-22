@@ -2,13 +2,15 @@
 classes: wide
 ---
 
-# Dfir ORC Parser Project
+# DFIR-ORC Parser Project : Configure DFIR-ORC
 
 Usefull links:
 * DOPP is available [here](https://github.com/youhgo/DOPP)
 * How to install DOPP, tutorial [here](https://youhgo.github.io/DOPP-how-to-install-EN/)
 * How to use DOPP, tutorial [here](https://youhgo.github.io/DOPP-how-to-use-EN/)
 * DOPP result architecture, explained [here](https://youhgo.github.io/DOPP-Results/)
+* How to configure DFIR-ORC tutorial [here](https://youhgo.github.io/DOPP-Config-ORC-EN/)
+
 
 I already made an already to go DFIR-ORC Binary available [here]() if you dont wanna bother do thoses steps.
 
