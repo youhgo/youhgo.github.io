@@ -10,6 +10,7 @@ Usefull links:
 * How to use DOPP, tutorial [here](https://youhgo.github.io/DOPP-how-to-use-EN/)
 * DOPP result architecture, explained [here](https://youhgo.github.io/DOPP-Results/)
 
+I already made an already to go DFIR-ORC Binary available [here]() if you dont wanna bother do thoses steps.
 
 ## What is ORC ?
 
