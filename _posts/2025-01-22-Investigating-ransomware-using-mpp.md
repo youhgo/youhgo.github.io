@@ -14,8 +14,8 @@ In this article we will proceed to the investigation of a Windows machine infect
 ## What is MPP ?
 
 
-MPP or MaximumPlasoParser is a python script that will parse a [plaso - Log2Timeline](https://github.com/log2timeline/plaso)  json timeline file.
-The goal is to regroup artefacts by categories in some easily readable and straight forward files.
+MPP or MaximumPlasoParser is a python script that will parse a [plaso - Log2Timeline](https://github.com/log2timeline/plaso)  Json timeline file.
+The goal is to regroup artefacts by categories in some easily readable and straight forward results.
 MPP produces extremely simple and readable results, allowing analysts to find the information they need directly.
 
 
@@ -24,8 +24,24 @@ MPP produces extremely simple and readable results, allowing analysts to find th
 # Start the investigation
 
 
+## Vocabulary
+
+
+**VMDK** : Virtual Machine Disk : VMDK is a file format that describes containers for virtual hard disk drives to be used in virtual machines like VMware Workstation or VirtualBox.
+
+**MFT** : Master File Table : The Master File Table (MFT) is a system file in the NTFS file system (having the name $MFT) that stores metadata information about all files and directories on an NTFS volume. The MFT acts as an index to all the files and directories on the volume, providing quick access to the information needed to retrieve a file.
+
+**USNJRNL** : Update Sequence Number Journal : The USN Journal (Update Sequence Number Journal), or Change Journal, is a feature of the Windows NT file system (NTFS) which maintains a record of changes made to the volume.
+
+**Amcache** : AmCache is a component of the Application Compatibility Framework in Windows. it stores metadata about executables and other files that have been run or interacted with on the system. This includes information about when files were first executed.
+
+**Shimcache** : ShimCache, also known as the Application Compatibility Cache, is a feature in Windows that helps maintain compatibility for older applications running on newer operating systems.
+
+**VT** : Virus Total : Virus Total is an online service that analyzes suspicious files and URLs to detect types of malware and malicious content using antivirus engines and website scanners.
+
+
 ## Context
-You are a forensic analyst and you have been contacted to investigate on a windows machine that has been infected with a ransomware. The client only provided the Virtual Machine DisK (VMDK) of the machine.
+You are a forensic analyst and you have been contacted to investigate a windows machine that has been infected with a ransomware. The client only provided the Virtual Machine DisK (VMDK) of the machine.
 
 
 
@@ -33,8 +49,7 @@ You are a forensic analyst and you have been contacted to investigate on a windo
 ## Parsing the evidences
 
 
-There is multiple way to investigate a VMDK, like mounting it as a file system and then extract the data you need.
-In this article we are gonna use Log2Timeline and Maximim Plaso Parser.
+In this article we are gonna use Log2Timeline and Maximim Plaso Parser to analyse the VMDK file provided.
 
 
 To create the timeline with plaso :
@@ -43,9 +58,14 @@ To create the timeline with plaso :
 ```bash
 psteal.py --source /home/hro/DFIR/BROCELIANDE_DC_Graal-disk1.vmdk -w full_timeline_graal.json -o json_line
 ```
+Psteal.py  is tool which uses log2timeline and psort engines to parse all data in one go.
+* – source is the path to the folder or file containing the data to be parsed
+* -w is the result file
+* -o json_line is the output format
 
 
-MPP need a jsonline output format, thats why we use -o json_line and not csv.
+
+MPP needs a jsonline output format, that's why we use -o json_line and not csv. 
 
 
 Once we have the timeline we can parse it with MPP :
@@ -58,7 +78,6 @@ result directory is located at : /home/hro/Documents/cyber/working_zone/testMP/m
 Finished in 75.00664639472961 secondes
 ```
 
-
 * -c is our casename : awesomeCase
 * --type is the output type of the file we want, here we set to "all" to have both json and CSV. I've done json to be able to do an ingestion on ELK for another article
 * -o is the output directory
@@ -70,16 +89,40 @@ Finished in 75.00664639472961 secondes
 
 After ~75 secondes MPP has finished and produced multiples files:
 ```bash
-ls *.csv
-amcache.csv  bits.csv local_rdp.csv  new_proc_file_id4688.csv  powershell_script.csv  run_key.csv  user_assist.csv  user_logon_id4624.csv   windows_start_stop.csv
-app_compat_cache.csv   ff_history.csv  mft.csv   new_service_id7045.csv    prefetch.csv   sam.csv    user_explicit_logon_id4648.csv  user_special_logon_id4672.csv  wmi.csv
-application_experience.csv  lnk.csv    mru.csv   powershell.csv    remote_rdp.csv  srum.csv   user_failed_logon_id4625.csv   windefender.csv timeline.csv
+tree
+├── 4624usrLogon.csv
+├── 4625usrFailLogon.csv
+├── 4648usrExpLogon.csv
+├── 4672usrSpeLogon.csv
+├── 4688newProc.csv
+├── 7045newService.csv
+├── amcache.csv
+├── applicationExperience.csv
+├── bits.csv
+├── ffHistory.csv
+├── lnk.csv
+├── mft.csv
+├── mru.csv
+├── powershell.csv
+├── powershellScript.csv
+├── prefetch.csv
+├── rdpLocal.csv
+├── rdpRemote.csv
+├── runKey.csv
+├── sam.csv
+├── shimcache.csv
+├── srum.csv
+├── timeline.csv
+├── usrAssist.csv
+├── windefender.csv
+├── winStartStop.csv
+└── wmi.csv
 ```
 
 
-Each file contains all entries for each artifact, sorted by datetime and easily readable. For example :
+Each file contains all entries for each artifact, sorted by datetime and easily readable.
 
-
+For example, the Amcache:
 ```bash
 head amcache.csv
 Date|Time|Name|FullPath|id|Hash
@@ -89,17 +132,23 @@ Date|Time|Name|FullPath|id|Hash
 ```
 
 
-## 1st Step : Determining a time window of the attack:
+
+
+
+
+
+
+## Determining a time window of the attack:
 
 
 The only information we have is that the machine was hit by a ransomware.
 
 
-During an investigation, time is crucial, so it's important to quiclky assess a time window of the attack, in order not to search for irrelevant informations.
+During an investigation, time is crucial, so it's important to quickly assess a time window of the attack, in order not to search for irrelevant information.
 
 
 We will search at what date and time the ransomware was executed, it will give us a timeframe of the attack.
-There is multiple way to find this information. We will first explore the MFT and look for a lot of file creation/modification having the same extension.
+There are multiple ways to find this information. We will first explore the MFT and look for a lot of file creation/modification having the same extension.
 
 
 ```bash
@@ -139,8 +188,10 @@ rg -i "\.byt" mft.csv | head -1
 Keep in mind that the MFT is sometimes inaccurate regarding file modification.
 
 
-If the date of the first encrypted file doesn't seem right you can look for the first ransom note left by the ransomware as they are not modified nor encrypted.
-Here it would give us a timeframe around 4 AM.
+If the date of the first encrypted file doesn't seem right you can look for the first ransom note left by the ransomware as they are neither modified nor encrypted.
+
+
+Here it would give us a timeframe around 4 AM on January 07 2021.
 
 
 
@@ -173,10 +224,7 @@ The Date-Time of the creation of the first encrypted file / ransom note gives us
 Lets search in the MFT what happened during the first 3 minutes after 4am on the 2021-01-07.
 
 
-(In our case, we could search directly for Bytelocker.exe, but in some other situations we have no garanties to know the name of the ransomware, it could be named anything.)
-
-
-
+(In our case, we could search directly for Bytelocker.exe, but in some other situations we have no garanties to know the name of the ransomware.)
 
 ```bash
 rg -iN "2021-01-07.04:0[1-3]:.." mft.csv  | head
@@ -188,9 +236,6 @@ rg -iN "2021-01-07.04:0[1-3]:.." mft.csv  | head
 2021-01-07|04:02:57|FILESTAT|file|Last Access Time|\Users\arthur\Documents\confidentiel\Bytelocker.exe
 2021-01-07|04:02:57|USNJRNL|N/A|USN_REASON_DATA_EXTEND USN_REASON_FILE_CREATE|Bytelocker.exe
 ```
-
-
-
 
 We have a hit on an file name:  "Bytelocker.exe", lets search that file :
 
@@ -219,7 +264,6 @@ rg -iN "Bytelocker.exe" mft.csv
 2021-01-07|04:27:15|USNJRNL|N/A|USN_REASON_SECURITY_CHANGE|Bytelocker.exe
 2021-01-07|04:27:16|FILESTAT|file|Metadata Modification Time|\Users\arthur\Documents\confidentiel\Bytelocker.exe
 ```
-
 
 With the info of the MFT combine with the one from the USN Journal, we can see that the ransomware was dropped at multiple places:
 * \Users\arthur\Documents\confidentiel\Bytelocker.exe
@@ -338,7 +382,7 @@ As you will see below the account "arthur" is also compromised.
 
 
 
-## Identifing malicious Actions
+## Identifying malicious Actions
 
 
 Because the connections we saw above are in SMB, an action should be linked.
@@ -597,15 +641,13 @@ With the av down, we see the successful creation of mimikatz.exe :
 2021-01-07|03:41:21.902393|shimcache|mimikatz.exe|C:\Users\Public\mimikatz.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 ```
 
-
 As we go through the timeline we can see multiple connections from arthur, still in SMB.
 ```bash
 2021-01-07|03:49:07.978986|4672usrSpeLogon|4672|arthur|-|-|-|-
 2021-01-07|03:49:07.979144|4624usrLogon|4624|-|arthur|192.168.88.137|46302|3
 2021-01-07|03:49:13.105779|mft|FILESTAT|file|Creation Time|\ProgramData\Microsoft\Diagnosis\DownloadedSettings\[Citrteam@hotmail.com].1LnNJAKH-WboL7pFq.CTRM
-
-
 ```
+
 In the MFT, this file is created : [Citrteam[@]hotmail[.]com].1LnNJAKH-WboL7pFq.CTRM. It match 2 iocs, the first one is "Citrteam[@]hotmail[.]com" and the second one is the file extension : "CRTM. Both those iocs are linked to CRTM ransomware, himself belonging to Matrix ransomware families.
 
 
@@ -613,8 +655,6 @@ CTRM ransomware encrypts files and renames them. It also creates a ransom note, 
 
 
 We have previously identified the ransomware as Bytelocker and now we have evidence of CRTM. Here we only have 1 file name CRTM, it was created and not modified. Maybe it was just a test by the attacker. Furthermore we don't have any evidence of any execution of a binary nor its creation in the MFT.
-
-
 
 
 ## Launching the Ransomware
@@ -637,9 +677,7 @@ timeline.csv
 2021-01-07|03:56:55.101887|shimcache|Bytelocker.exe|C:\Users\Public\Bytelocker.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 ```
 
-
 The ransomware execution might have failed as we see another tentative later on:
-
 
 ```bash
 2021-01-07|04:01:09.520882|4672usrSpeLogon|4672|arthur|-|-|-|-
@@ -648,9 +686,7 @@ The ransomware execution might have failed as we see another tentative later on:
 2021-01-07|04:02:57.273187|shimcache|Bytelocker.exe|C:\Users\Arthur\Documents\confidentiel\Bytelocker.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 ```
 
-
-This tentative was succeful as we can witness the encryption of many files few seconds later:
-
+This tentative was successful as we can witness the encryption of many files few seconds later:
 
 ```bash
 2021-01-07|04:03:18.460768|mft|USNJRNL|N/A|USN_REASON_DATA_EXTEND USN_REASON_FILE_CREATE|arrivée-dun-chaton-à-la-maison.jpg.byt
@@ -661,27 +697,20 @@ This tentative was succeful as we can witness the encryption of many files few s
 2021-01-07|04:03:18.570408|mft|USNJRNL|N/A|USN_REASON_RENAME_OLD_NAME USN_REASON_OBJECT_ID_CHANGE|arrivée-dun-chaton-à-la-maison.jpg.byt
 ```
 
-
 The ransomware added an entry to the runkey, probably for persistence :
-
 
 ```bash
 2021-01-07|04:05:58.398303|runKey|Bytelocker: "C:\Users\arthur\AppData\Roaming\{86ff23e9-f09f-4ca4-ae3d-41fe11fbabcd}.exe"
 ```
-
 
 Later on we spot the creation and execution of this binary : ATXO3fAc.exe.
 ```bash
 2021-01-07|04:20:51.023841|shimcache|ATXO3fAc.exe|C:\Users\Administrator\Documents\ATXO3fAc.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 ```
 
-
 By searching the md5 of ATXO3fAc64.exe we can find another name from it : VSSDestroy. It is associated with Matrix ransomwares.
 
-
-It his launched by at bat script :
-
-
+It his launched by a bat script :
 ```bash
 root@Sidious:/mnt/vmdk/Users/Administrator/Documents# cat CEp5f0ji.bat
 cacls %1 /E /G %USERNAME%:F /C
@@ -691,23 +720,17 @@ cd /d "%~dp0"
 FOR /F "UseBackQ Tokens=3,6 delims=: " %%I IN (`ATXO3fAc.exe -accepteula %FN% -nobanner`) DO (ATXO3fAc.exe -accepteula -c %%J -y -p %%I -nobanner)
 ```
 
-
 This binary is used to delete all Windows shadow-copies to avoid any restoration of the system pre-attack.
-
-
 
 
 ## Stealing datas
 
 
 Later in time we witness the execution of ActiveDirectorySync :
-
-
 ```bash
 2021-01-07|04:19:41.086045|shimcache|ActiveDirectorySync.exe|C:\Users\Administrator\Documents\ActiveDirectorySync.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 2021-01-07|04:19:41.086045|shimcache|NWcurdcz.exe|C:\Users\Administrator\Documents\NWcurdcz.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 ```
-
 
 Using ActiveDirectorySync.exe allow an attacker to do a DCSync attack.
 It's a technique that is typically used to steal credentials from an AD database. The attacker impersonates a domain controller (DC) to request password hashes from a target DC, using the Directory Replication Services (DRS) Remote Protocol. The attack can be used to effectively “pull” password hashes from the DC, without needing to run code on the DC itself. [source](https://www.semperis.com/blog/dcsync-attack/)
@@ -718,7 +741,6 @@ The file "NWcurdcz.exe" wasn't on the disk anymore so i couldn't investigate any
 
 On the disk I could find the file bad_3F79A31A837D5316.txt which looks like the result of a recon command. It contain a list of file and exe:
 
-
 ```bash
 ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Start Menu\Programs\Immersive Control Panel.lnk
 ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Microsoft\UEV\Templates\SettingsLocationTemplate2013.xsd
@@ -727,7 +749,7 @@ ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Appl
 ```
 
 
-by looking in the mft we can see that it was created around 4:20 am :
+by looking in the MFT we can see that it was created around 4:20 am :
 ```bash
 mft.csv
 2021-01-07|04:20:53.116940|mft|FILESTAT|file|Creation Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
@@ -744,7 +766,6 @@ I can't find any other following action from the attacker.
 
 
 It's not that irrelevant as he pwnd all the infrastructure, successfully executed the ransomware, dropped a remote access tool and stole a lot of sensitive information.
-
 
 
 
