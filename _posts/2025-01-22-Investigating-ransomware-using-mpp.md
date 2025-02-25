@@ -1,3 +1,9 @@
+---
+classes: wide
+---
+
+
+
 # Investigating a ransomware on a Windows machine using Maximum Plaso Parser
 
 
@@ -132,12 +138,6 @@ Date|Time|Name|FullPath|id|Hash
 ```
 
 
-
-
-
-
-
-
 ## Determining a time window of the attack:
 
 
@@ -181,6 +181,7 @@ To find the time when the ransomware was executed we can check for the first fil
 
 ```bash
 rg -i "\.byt" mft.csv | head -1
+Date|Time|source|fileName|action|fileType
 2021-01-07|04:03:12|USNJRNL|N/A|USN_REASON_FILE_CREATE|arrivée-dun-chaton-à-la-maison.jpg.byt
 ```
 
@@ -199,6 +200,7 @@ Here it would give us a timeframe around 4 AM on January 07 2021.
 Lot of ransom notes are labeled "readmexx", after searching for that we can find it :
 ```bash
 rg -i "README" mft.csv  | head -1
+Date|Time|source|fileName|action|fileType
 2021-01-07|04:20:59|USNJRNL|N/A|USN_REASON_FILE_CREATE|#README_CTRM#.rtf
 ```
 
@@ -228,6 +230,7 @@ Lets search in the MFT what happened during the first 3 minutes after 4am on the
 
 ```bash
 rg -iN "2021-01-07.04:0[1-3]:.." mft.csv  | head
+Date|Time|source|fileName|action|fileType
 2021-01-07|04:01:33|USNJRNL|N/A|USN_REASON_DATA_EXTEND USN_REASON_DATA_TRUNCATION|lastalive0.dat
 2021-01-07|04:02:33|USNJRNL|N/A|USN_REASON_DATA_TRUNCATION|lastalive1.dat
 [...]
@@ -242,6 +245,7 @@ We have a hit on an file name:  "Bytelocker.exe", lets search that file :
 
 ```bash
 rg -iN "Bytelocker.exe" mft.csv 
+Date|Time|source|fileName|action|fileType
 2021-01-07|03:56:55|USNJRNL|N/A|USN_REASON_FILE_CREATE|Bytelocker.exe
 2021-01-07|03:59:47|USNJRNL|N/A|USN_REASON_FILE_DELETE USN_REASON_CLOSE|Bytelocker.exe
 [...]
@@ -277,17 +281,20 @@ There is several way to do that, the first one is the amcache, the second the sh
 ```bash
 rg -iN "bytelocker.exe" amcache.csv app_compat_cache.csv user_assist.csv
 user_assist.csv
+Date|Time|valueName|appFocus|appDuration
 2021-01-07|03:58:58|C:\Users\Public\Bytelocker.exe|0|0
 2021-01-07|04:00:50|C:\Users\arthur\Documents\confidentiel\Bytelocker.exe|0|0
 
 
-app_compat_cache.csv
+shimcache.csv
+Date|Time|Name|FullPath|Hash
 2021-01-07|03:56:55|Bytelocker.exe|C:\Users\Public\Bytelocker.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 2021-01-07|04:02:57|Bytelocker.exe|C:\Users\Arthur\Documents\confidentiel\Bytelocker.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 2021-01-07|04:05:41|Bytelocker.exe|C:\Users\Arthur\Documents\Bytelocker.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 
 
 amcache.csv
+Date|Time|Name|FullPath|id|Hash
 2040-01-05|12:07:17|bytelocker.exe|c:\users\public\bytelocker.exe|0006325d14a30ff7987e661f1b3bcca4b51100000000|d5006bbcc79d52882acac909e7e9d9a4141af938d9f942981f5e0ae3bba5a62b
 2040-01-05|12:07:17|bytelocker.exe|c:\users\arthur\documents\confidentiel\bytelocker.exe|0006325d14a30ff7987e661f1b3bcca4b51100000000|d5006bbcc79d52882acac909e7e9d9a4141af938d9f942981f5e0ae3bba5a62b
 2041-01-28|23:31:00|bytelocker.exe|c:\users\arthur\documents\bytelocker.exe|0006325d14a30ff7987e661f1b3bcca4b51100000000|d5006bbcc79d52882acac909e7e9d9a4141af938d9f942981f5e0ae3bba5a62b
@@ -311,6 +318,7 @@ While looking at the USN_journal (see above) we can see that the binary was dele
 
 ```bash
 rg -i "#README_CTRM#.rtf.byt" mft.csv | head -1
+Date|Time|source|fileName|action|fileType
 2021-01-07|04:21:00|USNJRNL|N/A|USN_REASON_FILE_CREATE|#README_CTRM#.rtf.byt
 ```
 
@@ -394,19 +402,23 @@ Let’s see what happens in the next 10 seconds following the connection:
 ```bash
 rg -iN "2021-01-07\|03:28:2." *.csv
 windefender.csv
+Date|Time|Event|ThreatName|Severity|User|ProcessName|Path|Action
 2021-01-07|03:28:23|1116 - Detection|VirTool:Win32/MSFPsExecCommand|Severe|NT AUTHORITY\SYSTEM|Unknown|CmdLine:_C:\Windows\System32\cmd.exe /Q /c echo cd ^> \\127.0.0.1\C$\__output 2^>^&1 > C:\Windows\TEMP\execute.bat & C:\Windows\system32\cmd.exe /Q /c C:\Windows\TEMP\execute.bat & del C:\Windows\TEMP\execute.bat|Not Applicable
 
 
 user_special_logon_id4672.csv
+Date|Time|event_code|logon_type|subject_user_name|target_user_name|ip_address|ip_port
 2021-01-07|03:28:22|4672|Administrator|-|-|-|-
 2021-01-07|03:28:23|4672|SYSTEM|-|-|-|-
 
 
 new_service_id7045.csv
+Date|Time|event_code|account_name|img_path|service_name|start_type
 2021-01-07|03:28:22|7045|LocalSystem|%COMSPEC% /Q /c echo cd  ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat & %COMSPEC% /Q /c %TEMP%\execute.bat & del %TEMP%\execute.bat|BTOBTO
 
 
 user_logon_id4624.csv
+Date|Time|event_code|logon_type|subject_user_name|target_user_name|ip_address|ip_port
 2021-01-07|03:28:22|4624|-|Administrator|192.168.88.137|53942|3
 2021-01-07|03:28:23|4624|GRAAL$|SYSTEM|-|-|5
 ```
@@ -418,11 +430,13 @@ We have interesting things going on here; let’s explain:
 #### Connections
 ```
 user_logon_id4624.csv
+Date|Time|event_code|logon_type|subject_user_name|target_user_name|ip_address|ip_port
 2021-01-07|03:28:22|4624|-|Administrator|192.168.88.137|53942|3
 2021-01-07|03:28:23|4624|GRAAL$|SYSTEM|-|-|5
 
 
 user_special_logon_id4672.csv
+Date|Time|event_code|logon_type|subject_user_name|target_user_name|ip_address|ip_port
 2021-01-07|03:28:22|4672|Administrator|-|-|-|-
 2021-01-07|03:28:23|4672|SYSTEM|-|-|-|-
 
@@ -441,6 +455,7 @@ A new service was created :
 
 ```bash
 new_service_id7045.csv
+Date|Time|event_code|account_name|img_path|service_name|start_type
 2021-01-07|03:28:22|7045|LocalSystem|%COMSPEC% /Q /c echo cd  ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat & %COMSPEC% /Q /c %TEMP%\execute.bat & del %TEMP%\execute.bat|BTOBTO
 ```
 
@@ -476,22 +491,16 @@ cd ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat:
 
 
 
-
 **To Sum Up :**
-
 
 This command will launch a terminal and create a batch file at location %TEMP%\execute.bat and write cmd to change location to the share folder of the machine inside of it.
 
 
-
-
 The second part :
-
 
 ```bash
 %COMSPEC% /Q /c %TEMP%\execute.bat & del %TEMP%\execute.bat|BTOBTO
 ```
-
 
 * "%COMSPEC% /Q /c %TEMP%\execute.bat" : This cmd executes the execute.bat file that was just created.
 * "del %TEMP%\execute.bat": This deletes the temporary execute.bat file after it has been executed.
@@ -504,20 +513,17 @@ The second part :
 This cmd will execute then delete the batch file created previously.
 
 
-
-
 #### Anti Virus hits
+
 ```bash
 windefender.csv
+Date|Time|Event|ThreatName|Severity|User|ProcessName|Path|Action
 2021-01-07|03:28:23|1116 - Detection|VirTool:Win32/MSFPsExecCommand|Severe|NT AUTHORITY\SYSTEM|Unknown|CmdLine:_C:\Windows\System32\cmd.exe /Q /c echo cd ^> \\127.0.0.1\C$\__output 2^>^&1 > C:\Windows\TEMP\execute.bat & C:\Windows\system32\cmd.exe /Q /c C:\Windows\TEMP\execute.bat & del C:\Windows\TEMP\execute.bat|Not Applicable
 [...]
 2021-01-07|03:28:38|1117 - Action|VirTool:Win32/MSFPsExecCommand|Severe|NT AUTHORITY\SYSTEM|Unknown|Remove
 ```
 
-
 The windefer av identified that cmd line as a Severe threat and later removed it/blocked it.
-
-
 
 
 By checking the timeline we can see that the attacker tried at least 4 times without success, he tried with user arthur and Administrator.
@@ -527,8 +533,6 @@ By checking the timeline we can see that the attacker tried at least 4 times wit
 
 
 As we continue to browse our timeline we can find :
-
-
 ```bash
 amcache.csv
 2021-01-07|03:24:40|mimikatz.exe|c:\users\public\mimikatz.exe|0006474843b18c8fcb1dda3a11ea33af7ed000000904|d5006bbcc79d52882acac909e7e9d9a4141af938d9f942981f5e0ae3bba5a62b
@@ -537,17 +541,14 @@ amcache.csv
 
 we have an entry name mimikatz.exe in the Amcache hive at 2021-01-07T03:24:40.
 
-
 I can't find any other action related to it, no entry in the MFT, no type3 connection related, no av flag, nothing. We saw earlier that the amcache dateTime was not correct so it might be the case here but i doubt it as it's in the timeframe of the attack.
-
 
 As we keep going, we can see more interestings things here :
 
 
 ```bash
-mft.csv
+timeline.csv
 2021-01-07|03:35:06|4624|-|arthur|192.168.88.137|45860|3
-
 
 2021-01-07|03:35:43|USNJRNL|N/A|USN_REASON_DATA_EXTEND USN_REASON_FILE_CREATE|mimikatz.exe
 2021-01-07|03:35:44|1116 - Detection|HackTool:Win32/Mimikatz.D|High|BROCELIANDE\arthur|C:\Users\Public\beacon.exe|file:_C:\Users\Public\mimikatz.exe|Not Applicable
@@ -562,28 +563,23 @@ mft.csv
 
 We have another connection from user arthur and multiple av hit with mimikatz and "beacon.exe".
 
-
-
-
 Later on, a powershell cmd is executed:
-
-
 ```bash
 powershell.csv
+Date|Time|event_code|cmd
 2021-01-07|03:37:03|600|powershell Set-MpPreference -DisableRealtimeMonitoring $true; Get-MpComputerStatus
 ```
 
 
 This command disables the real time monitoring of the AV and checks the AV status.
 
-
 Few seconds later we get a connection by Arthur and the creation of the file beacon.exe.
-
 
 Shortly after it's flag by the AV:
 
 
 ```bash
+timeline.csv
 2021-01-07|03:37:06.374663|4672usrSpeLogon|4672|arthur|-|-|-|-
 2021-01-07|03:37:06.374766|4624usrLogon|4624|-|arthur|192.168.88.137|45990|3
 [...]
@@ -600,9 +596,7 @@ md5sum beacon.exe
 4f3df018ea5e4eb39c9cc5c55050a92b  beacon.exe
 ```
 
-
 Info from VT indicates that it's a beacon from Cobalt Strike.
-
 
 We can extract the config from the beacon with csce :
 ```json  "server": {
@@ -624,15 +618,10 @@ This IP is related to many malicious binary (source VT) :
 2024-05-29  52/ 74 Win32 EXE  executable.2488.exe
 ```
 
-
-
-
 With the av down, we see the successful creation of mimikatz.exe :
 
-
-
-
 ```bash
+timeline.csv
 2021-01-07|03:41:06.888806|4672usrSpeLogon|4672|arthur|-|-|-|-
 2021-01-07|03:41:06.888956|4624usrLogon|4624|-|arthur|192.168.88.137|46108|3
 [...]
@@ -643,6 +632,7 @@ With the av down, we see the successful creation of mimikatz.exe :
 
 As we go through the timeline we can see multiple connections from arthur, still in SMB.
 ```bash
+timeline.csv
 2021-01-07|03:49:07.978986|4672usrSpeLogon|4672|arthur|-|-|-|-
 2021-01-07|03:49:07.979144|4624usrLogon|4624|-|arthur|192.168.88.137|46302|3
 2021-01-07|03:49:13.105779|mft|FILESTAT|file|Creation Time|\ProgramData\Microsoft\Diagnosis\DownloadedSettings\[Citrteam@hotmail.com].1LnNJAKH-WboL7pFq.CTRM
@@ -650,9 +640,7 @@ As we go through the timeline we can see multiple connections from arthur, still
 
 In the MFT, this file is created : [Citrteam[@]hotmail[.]com].1LnNJAKH-WboL7pFq.CTRM. It match 2 iocs, the first one is "Citrteam[@]hotmail[.]com" and the second one is the file extension : "CRTM. Both those iocs are linked to CRTM ransomware, himself belonging to Matrix ransomware families.
 
-
 CTRM ransomware encrypts files and renames them. It also creates a ransom note, usually named "CTRM_INFO.rtf" in all folders that contain encrypted files. CTRM renames files by replacing their filenames with the citrteam@xxxx.com email address and random strings, file ext is  ".CTRM".
-
 
 We have previously identified the ransomware as Bytelocker and now we have evidence of CRTM. Here we only have 1 file name CRTM, it was created and not modified. Maybe it was just a test by the attacker. Furthermore we don't have any evidence of any execution of a binary nor its creation in the MFT.
 
@@ -662,8 +650,7 @@ We have previously identified the ransomware as Bytelocker and now we have evide
 
 After lot of failed connections from Arthur, we get an eventID 4648 and a success RDP connexion with a bytelocker.exe entry in the shimcache:
 
-
-```Bash
+```bash
 timeline.csv
 2021-01-07|03:55:16.043038|4648usrExpLogon|4648|GRAAL$|arthur|127.0.0.1|0|-
 2021-01-07|03:55:16.043065|4624usrLogon|4624|GRAAL$|arthur|127.0.0.1|0|2
@@ -680,6 +667,7 @@ timeline.csv
 The ransomware execution might have failed as we see another tentative later on:
 
 ```bash
+timeline.csv
 2021-01-07|04:01:09.520882|4672usrSpeLogon|4672|arthur|-|-|-|-
 2021-01-07|04:01:09.521008|4624usrLogon|4624|-|arthur|192.168.88.137|46658|3
 2021-01-07|04:02:57.273187|mft|USNJRNL|N/A|USN_REASON_FILE_CREATE|Bytelocker.exe
@@ -689,6 +677,7 @@ The ransomware execution might have failed as we see another tentative later on:
 This tentative was successful as we can witness the encryption of many files few seconds later:
 
 ```bash
+timeline.csv
 2021-01-07|04:03:18.460768|mft|USNJRNL|N/A|USN_REASON_DATA_EXTEND USN_REASON_FILE_CREATE|arrivée-dun-chaton-à-la-maison.jpg.byt
 2021-01-07|04:03:18.570408|mft|USNJRNL|N/A|USN_REASON_DATA_EXTEND USN_REASON_FILE_CREATE USN_REASON_CLOSE|arrivée-dun-chaton-à-la-maison.jpg.byt
 2021-01-07|04:03:18.570408|mft|USNJRNL|N/A|USN_REASON_FILE_DELETE USN_REASON_CLOSE|arrivée-dun-chaton-à-la-maison.jpg
@@ -700,11 +689,13 @@ This tentative was successful as we can witness the encryption of many files few
 The ransomware added an entry to the runkey, probably for persistence :
 
 ```bash
+timeline.csv
 2021-01-07|04:05:58.398303|runKey|Bytelocker: "C:\Users\arthur\AppData\Roaming\{86ff23e9-f09f-4ca4-ae3d-41fe11fbabcd}.exe"
 ```
 
 Later on we spot the creation and execution of this binary : ATXO3fAc.exe.
 ```bash
+timeline.csv
 2021-01-07|04:20:51.023841|shimcache|ATXO3fAc.exe|C:\Users\Administrator\Documents\ATXO3fAc.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 ```
 
@@ -725,9 +716,9 @@ This binary is used to delete all Windows shadow-copies to avoid any restoration
 
 ## Stealing datas
 
-
 Later in time we witness the execution of ActiveDirectorySync :
 ```bash
+timeline.csv
 2021-01-07|04:19:41.086045|shimcache|ActiveDirectorySync.exe|C:\Users\Administrator\Documents\ActiveDirectorySync.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 2021-01-07|04:19:41.086045|shimcache|NWcurdcz.exe|C:\Users\Administrator\Documents\NWcurdcz.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 ```
@@ -748,10 +739,10 @@ ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Appl
 [...]
 ```
 
-
 by looking in the MFT we can see that it was created around 4:20 am :
 ```bash
 mft.csv
+Date|Time|source|fileName|action|fileType
 2021-01-07|04:20:53.116940|mft|FILESTAT|file|Creation Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
 2021-01-07|04:44:51.151497|mft|FILESTAT|file|Content Modification Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
 2021-01-07|04:44:51.151497|mft|FILESTAT|file|Last Access Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
@@ -771,9 +762,7 @@ It's not that irrelevant as he pwnd all the infrastructure, successfully execute
 
 ## The end
 
-
 This is the end of this article, I hope you enjoyed it !
-
 
 I'll be pleased to talk about it :)
 
