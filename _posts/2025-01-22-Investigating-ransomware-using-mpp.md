@@ -181,7 +181,7 @@ To find the time when the ransomware was executed we can check for the first fil
 
 ```bash
 rg -i "\.byt" mft.csv | head -1
-Date|Time|source|fileName|action|fileType
+Date|Time|source|action|fileType|fileName
 2021-01-07|04:03:12|USNJRNL|N/A|USN_REASON_FILE_CREATE|arrivée-dun-chaton-à-la-maison.jpg.byt
 ```
 
@@ -200,7 +200,7 @@ Here it would give us a timeframe around 4 AM on January 07 2021.
 Lot of ransom notes are labeled "readmexx", after searching for that we can find it :
 ```bash
 rg -i "README" mft.csv  | head -1
-Date|Time|source|fileName|action|fileType
+Date|Time|source|action|fileType|fileName
 2021-01-07|04:20:59|USNJRNL|N/A|USN_REASON_FILE_CREATE|#README_CTRM#.rtf
 ```
 
@@ -230,7 +230,7 @@ Lets search in the MFT what happened during the first 3 minutes after 4am on the
 
 ```bash
 rg -iN "2021-01-07.04:0[1-3]:.." mft.csv  | head
-Date|Time|source|fileName|action|fileType
+Date|Time|source|action|fileType|fileName
 2021-01-07|04:01:33|USNJRNL|N/A|USN_REASON_DATA_EXTEND USN_REASON_DATA_TRUNCATION|lastalive0.dat
 2021-01-07|04:02:33|USNJRNL|N/A|USN_REASON_DATA_TRUNCATION|lastalive1.dat
 [...]
@@ -245,7 +245,7 @@ We have a hit on an file name:  "Bytelocker.exe", lets search that file :
 
 ```bash
 rg -iN "Bytelocker.exe" mft.csv 
-Date|Time|source|fileName|action|fileType
+Date|Time|source|action|fileType|fileName
 2021-01-07|03:56:55|USNJRNL|N/A|USN_REASON_FILE_CREATE|Bytelocker.exe
 2021-01-07|03:59:47|USNJRNL|N/A|USN_REASON_FILE_DELETE USN_REASON_CLOSE|Bytelocker.exe
 [...]
@@ -318,7 +318,7 @@ While looking at the USN_journal (see above) we can see that the binary was dele
 
 ```bash
 rg -i "#README_CTRM#.rtf.byt" mft.csv | head -1
-Date|Time|source|fileName|action|fileType
+Date|Time|source|action|fileType|fileName
 2021-01-07|04:21:00|USNJRNL|N/A|USN_REASON_FILE_CREATE|#README_CTRM#.rtf.byt
 ```
 
@@ -742,7 +742,7 @@ ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Appl
 by looking in the MFT we can see that it was created around 4:20 am :
 ```bash
 mft.csv
-Date|Time|source|fileName|action|fileType
+Date|Time|source|action|fileType|fileName
 2021-01-07|04:20:53.116940|mft|FILESTAT|file|Creation Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
 2021-01-07|04:44:51.151497|mft|FILESTAT|file|Content Modification Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
 2021-01-07|04:44:51.151497|mft|FILESTAT|file|Last Access Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
