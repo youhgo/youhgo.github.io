@@ -118,6 +118,7 @@ tree
 ├── sam.csv
 ├── shimcache.csv
 ├── srum.csv
+├── taskScheduler.csv
 ├── timeline.csv
 ├── usrAssist.csv
 ├── windefender.csv
@@ -634,7 +635,7 @@ timeline.csv
 ```
 
 
-## Launching the Ransomware
+## Launching the Ransomwares
 
 ### Bytelocker
 After lot of failed connections from Arthur, we get an eventID 4648 and a success RDP connexion with a bytelocker.exe entry in the shimcache:
@@ -681,12 +682,14 @@ The ransomware added an entry to the runkey, probably for persistence :
 timeline.csv
 2021-01-07|04:05:58.398303|runKey|Bytelocker: "C:\Users\arthur\AppData\Roaming\{86ff23e9-f09f-4ca4-ae3d-41fe11fbabcd}.exe"
 ```
+As we saw earlier in this article, it looks like the attacker had trouble with that ransomware. 
+So he decided to launch Another one XD
 
-### Matrix
+### Matrix Ransomware
 
-The following action are typically used by Matrix ransomwares.
 
 We can spot the creation of multiple scripts, binary and scheduled tasks :
+
 ```bash
 timeline.csv
 2021-01-07|04:20:51.023841|mft|USNJRNL|N/A|USN_REASON_FILE_CREATE|ATXO3fAc.exe
@@ -700,6 +703,7 @@ timeline.csv
 2021-01-07|04:21:13.728579|taskScheduler|106|-|\DSHCA|-|-|-|-|BROCELIANDE\arthur
 2021-01-07|04:21:13.728581|taskScheduler|140|-|\DSHCA|-|-|-|BROCELIANDE\arthur|-
 2021-01-07|04:21:22.952657|taskScheduler|200|-|\DSHCA|-|C:\Windows\SYSTEM32\cmd.exe|-|-|-
+[...]
 2021-01-07|04:44:43.875135|taskScheduler|201|-|\DSHCA|-|C:\Windows\SYSTEM32\cmd.exe|3221225786|-|-
 
 ```
@@ -749,6 +753,7 @@ Set W = CreateObject("Wscript.Shell")
 W.Run "cmd.exe /C schtasks /Create /tn DSHCA /tr ""C:\Users\arthur\AppData\Roaming\M1nLSX9d.bat"" /sc minute /mo 5 /RL HIGHEST /F", 0, True
 W.Run "cmd.exe /C schtasks /Run /I /tn DSHCA", 0, False
 ```
+
 This script creates a scheduled task named "DSHCA" that runs the batch file "M1nLSX9d.bat" every 5 minutes with the highest privileges.
 Then, it immediately runs the newly created task.
 
@@ -782,12 +787,10 @@ In the MFT, a lot of file are created/modified and have the same naming patern :
 ```
 
 It match 2 iocs related to Matrix ransomware famillies:
-The name contains "Citrteam[@]hotmail[.]com"
-The file extension is  : "CTRM.
+* The name contains "Citrteam[@]hotmail[.]com"
+* The file extension is  : "CTRM.
 
-By all means, It looks like a 2nd ransomware has been launched on the machine.
-
-but why ? i have no idea.
+We have our second ransomware CTRM aka Matrix !
 
 
 ## Stealing datas
