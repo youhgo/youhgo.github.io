@@ -493,7 +493,7 @@ cd ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat:
 
 **To Sum Up :**
 
-This command will launch a terminal and create a batch file at location %TEMP%\execute.bat and write cmd to change location to the share folder of the machine inside of it.
+This command will launch a terminal and create a batch file at location %TEMP%\execute.bat. The file "execute.bat" contain a cmd to change location to the share folder of the machine.
 
 
 The second part :
@@ -599,7 +599,9 @@ md5sum beacon.exe
 Info from VT indicates that it's a beacon from Cobalt Strike.
 
 We can extract the config from the beacon with csce :
-```json  "server": {
+
+```json 
+"server": {
    "hostname": "20.39.243.236",
    "port": 80,
    "publickey": "MIGfMA0GCSqAAA[...]AAAAAAA=="
