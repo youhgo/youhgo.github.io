@@ -15,23 +15,16 @@ Usefull links:
 In this article we will proceed to the investigation of a Windows machine infected with a ransomware, using Maximum Plaso Parser.
 
 
-
-
 ## What is MPP ?
-
 
 MPP or MaximumPlasoParser is a python script that will parse a [plaso - Log2Timeline](https://github.com/log2timeline/plaso)  Json timeline file.
 The goal is to regroup artefacts by categories in some easily readable and straight forward results.
 MPP produces extremely simple and readable results, allowing analysts to find the information they need directly.
 
 
-
-
 # Start the investigation
 
-
 ## Vocabulary
-
 
 **VMDK** : Virtual Machine Disk : VMDK is a file format that describes containers for virtual hard disk drives to be used in virtual machines like VMware Workstation or VirtualBox.
 
@@ -50,13 +43,10 @@ MPP produces extremely simple and readable results, allowing analysts to find th
 You are a forensic analyst and you have been contacted to investigate a windows machine that has been infected with a ransomware. The client only provided the Virtual Machine DisK (VMDK) of the machine.
 
 
-
-
 ## Parsing the evidences
 
 
 In this article we are gonna use Log2Timeline and Maximim Plaso Parser to analyse the VMDK file provided.
-
 
 To create the timeline with plaso :
 
@@ -70,9 +60,7 @@ Psteal.py  is tool which uses log2timeline and psort engines to parse all data i
 * -o json_line is the output format
 
 
-
 MPP needs a jsonline output format, that's why we use -o json_line and not csv. 
-
 
 Once we have the timeline we can parse it with MPP :
 
@@ -89,9 +77,6 @@ Finished in 75.00664639472961 secondes
 * -o is the output directory
 * -t is the plaso timeline we created before
 * -m is the name of the machine, here it's DC_graal.
-
-
-
 
 After ~75 secondes MPP has finished and produced multiples files:
 ```bash
@@ -126,7 +111,6 @@ tree
 └── wmi.csv
 ```
 
-
 Each file contains all entries for each artifact, sorted by datetime and easily readable.
 
 For example, the Amcache:
@@ -138,19 +122,14 @@ Date|Time|Name|FullPath|id|Hash
 1973-10-18|23:53:42|msiexec.exe|c:\windows\system32\msiexec.exe|0000f519feec486de87ed73cb92d3cac802400000000|d5006bbcc79d52882acac909e7e9d9a4141af938d9f942981f5e0ae3bba5a62b
 ```
 
-
 ## Determining a time window of the attack:
-
 
 The only information we have is that the machine was hit by a ransomware.
 
-
 During an investigation, time is crucial, so it's important to quickly assess a time window of the attack, in order not to search for irrelevant information.
-
 
 We will search at what date and time the ransomware was executed, it will give us a timeframe of the attack.
 There are multiple ways to find this information. We will first explore the MFT and look for a lot of file creation/modification having the same extension.
-
 
 ```bash
 cut -d '|' -f6 mft.csv | awk -F'.' '{print $NF}' | sort | uniq -c | sort -nr | head -30
@@ -162,23 +141,14 @@ cut -d '|' -f6 mft.csv | awk -F'.' '{print $NF}' | sort | uniq -c | sort -nr | h
 6909 dat
 ```
 
-
 Here we can find the ".byt" extension with 7340 entries in the MFT.
 ".byt" extension file is characteristic of the Bytelocker ransomware. We can also find evidence of ".bytcrypttmp" file extension.
 
-
-
-
 By looking on the MFT, we can find the ransomware at : C/Users/arthur/Documents/Bytelocker.exe with md5 : b8ef6e365a55a0ec96c19c61f1bce476.
-
 
 From his name and info on VT, the ransomware is Bytelocker.
 
-
 To find the time when the ransomware was executed we can check for the first file containing the ".byt" extension,
-
-
-
 
 ```bash
 rg -i "\.byt" mft.csv | head -1
@@ -186,31 +156,22 @@ Date|Time|source|fileType|action|fileName
 2021-01-07|04:03:12|USNJRNL|N/A|USN_REASON_FILE_CREATE|arrivée-dun-chaton-à-la-maison.jpg.byt
 ```
 
-
 Keep in mind that the MFT is sometimes inaccurate regarding file modification.
-
 
 If the date of the first encrypted file doesn't seem right you can look for the first ransom note left by the ransomware as they are neither modified nor encrypted.
 
-
 Here it would give us a timeframe around 4 AM on January 07 2021.
 
+Lot of ransom notes are labeled "readmexx", after searching for that we can find one :
 
-
-
-Lot of ransom notes are labeled "readmexx", after searching for that we can find it :
 ```bash
 rg -i "README" mft.csv  | head -1
 Date|Time|source|fileType|action|fileName
 2021-01-07|04:20:59|USNJRNL|N/A|USN_REASON_FILE_CREATE|#README_CTRM#.rtf
 ```
-
-
-(Note:  we'll see more later about CTRM )
-
+Oops, "README_CTRM" is associated with CTRM ransomware, not bytelocker. We will see more later about CTRM later in this article.
 
 After extracting the ransom note from the disk, we can get it's content:
-
 
 ```crtf
 Аll yоur vаluаblе dаtа hаs bееn еnсryptеd!
@@ -218,7 +179,6 @@ Hеllо!
 Sоrry, but wе hаvе tо infоrm yоu thаt duе tо sесurity issuеs, yоur sеrvеr wаs hасkеd. Plеаsе bе surе thаt yоur dаtа is nоt brоkеn. All yоur vаluаblе filеs wеrе еnсryptеd with strоng сryptо аlgоrithms AES-256+RSA-2048 аnd rеnаmеd. Yоu саn rеаd аbоut thеsе аlgоrithms in Gооglе. Yоur uniquе dесryptiоn kеy is sесurеly stоrеd оn оur sеrvеr аnd yоur dаtа саn bе dесryptеd fаst аnd sаfеly.
 [...]
 ```
-
 
 The Date-Time of the creation of the first encrypted file / ransom note gives us a good time window to look for.
 
@@ -301,9 +261,6 @@ Date|Time|Name|FullPath|id|Hash
 2041-01-28|23:31:00|bytelocker.exe|c:\users\arthur\documents\bytelocker.exe|0006325d14a30ff7987e661f1b3bcca4b51100000000|d5006bbcc79d52882acac909e7e9d9a4141af938d9f942981f5e0ae3bba5a62b
 ```
 
-
-
-
 We have hits in all of these files, the dateTime in the amcache is obviously wrong but it means that the binary was executed (we obviously knew because of all the encrypted files).
 Contrary to the amcache, an entry in the shimcache doesn't mean the program was executed.
 But if we correlate the dateTime of the shimcache entry, the user assist entry and the date of the first file encryption, we can assume that the entries in the shimcache are pretty much correct.
@@ -311,18 +268,7 @@ But if we correlate the dateTime of the shimcache entry, the user assist entry a
 
 We have a total of 3 entries in the amcache with a location that wasn't in the MFT "c:\users\public\bytelocker.exe".
 
-
-
-
-While looking at the USN_journal (see above) we can see that the binary was deleted and created again in another directory. That would explain why some ransom notes are encrypted I guess ?
-
-
-```bash
-rg -i "#README_CTRM#.rtf.byt" mft.csv | head -1
-Date|Time|source|fileType|action|fileName
-2021-01-07|04:21:00|USNJRNL|N/A|USN_REASON_FILE_CREATE|#README_CTRM#.rtf.byt
-```
-
+While looking at the USN_journal (see above) we can see that the binary was deleted and created again in another directory.
 
 OK, we have our ransomware execution, the file location and the execution time. Let's continue to investigate.
 
@@ -790,10 +736,11 @@ It match 2 iocs related to Matrix ransomware famillies:
 * The name contains "Citrteam[@]hotmail[.]com"
 * The file extension is  : "CTRM.
 
-We have our second ransomware CTRM aka Matrix !
 
 
 ## Stealing datas
+
+It's pretty common for attacker to steel datas as well to have another leverage to make sure that the victime will pay the ransom.
 
 Later in time we witness the execution of ActiveDirectorySync :
 ```bash
