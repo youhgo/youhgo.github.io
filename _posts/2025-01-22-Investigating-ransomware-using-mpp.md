@@ -41,14 +41,14 @@ You are a forensic analyst and you have been contacted to investigate a windows 
 
 **VT** : Virus Total : Virus Total is an online service that analyzes suspicious files and URLs to detect types of malware and malicious content using antivirus engines and website scanners.
 
-**CObalt Strike**:
+**Cobalt Strike**: Cobalt Strike is a tool developed for ethical hackers, but like many other offensive cybersecurity tools, it has fallen into the wrong hands. This powerful network attack platform combines social engineering, unauthorized access tools, network pattern obfuscation and a sophisticated mechanism for deploying malicious executable code on compromised systems. It can now be used by attackers to deploy advanced persistent threat (APT) attacks against your organization. [source](https://www.cynet.com/network-attacks/cobalt-strike-white-hat-hacker-powerhouse-in-the-wrong-hands/)
 
-**Mimikatz**:
+**Mimikatz**: Mimikatz is a now well known tool to extract plaintexts passwords, hash, PIN code and kerberos tickets from memory. mimikatz can also perform pass-the-hash, pass-the-ticket or build Golden tickets. [source](https://github.com/gentilkiwi/mimikatz)
 
 
 ## Parsing the evidences
 
-In this article we are gonna use Log2Timeline and Maximim Plaso Parser to analyse the VMDK file provided.
+In this article we will use Log2Timeline and Maximim Plaso Parser to analyse the VMDK file provided.
 
 To create the timeline with log2timeline :
 
@@ -517,19 +517,6 @@ __On the 2021-01-07 at 03:37:24 the attacker successfully disabled the anti-viru
 
 ## Launching the ransomwares
 
-
-
-
-We have hits in all of these files, the dateTime in the amcache is obviously wrong but it means that the binary was executed (we obviously knew because of all the encrypted files).
-Contrary to the amcache, an entry in the shimcache doesn't mean the program was executed.
-But if we correlate the dateTime of the shimcache entry, the user assist entry and the date of the first file encryption, we can assume that the entries in the shimcache are pretty much correct.
-
-
-We have a total of 3 entries in the amcache with a location that wasn't in the MFT "c:\users\public\bytelocker.exe".
-
-While looking at the USN_journal (see above) we can see that the binary was deleted and created again in another directory.
-
-
 ### Bytelocker
 
 As we continue to investigate, we find a successful RDP connexion and some entry from bytelocker.exe, an infamous ransomware in the shimcache, user_assist and the MFT:
@@ -552,6 +539,16 @@ timeline.csv
 2021-01-07|04:00:50|user_assist|C:\Users\arthur\Documents\confidentiel\Bytelocker.exe|0|0
 ```
 
+There is also some entries into the amcache but the timestamp is faulty:
+```bash
+amcache.csv
+Date|Time|Name|FullPath|id|Hash
+2040-01-05|12:07:17|bytelocker.exe|c:\users\public\bytelocker.exe|0006325d14a30ff7987e661f1b3bcca4b51100000000|d5006bbcc79d52882acac909e7e9d9a4141af938d9f942981f5e0ae3bba5a62b
+```
+
+Contrary to the amcache, an entry in the shimcache doesn't nececeraly mean the program was executed. But we can correlate evidences from the user assist, the successfull encryption of file to assume that it was indeed executed at that time.
+
+
 We can see that the ransomware was dropped at multiple places:
 * \Users\arthur\Documents\confidentiel\Bytelocker.exe
 * \Users\arthur\Documents\Bytelocker.exe
@@ -560,6 +557,7 @@ We can see that the ransomware was dropped at multiple places:
 
 The md5 of the file "bytelocker.exe" is : b8ef6e365a55a0ec96c19c61f1bce476. A quick search on Virus Total confirm that the ransomware is truly bytelocker.
 
+__On the 2021-01-07 between 03:56 and 03:58, the ransomware was executed for the first time on the machine__
 
 The ransomware execution might have failed as we see another tentative later on:
 
@@ -583,17 +581,24 @@ timeline.csv
 2021-01-07|04:03:18.570408|mft|USNJRNL|N/A|USN_REASON_RENAME_OLD_NAME USN_REASON_OBJECT_ID_CHANGE|arrivée-dun-chaton-à-la-maison.jpg.byt
 ```
 
+__On the 2021-01-07 around 04:02, the ransomware was executed for the second time on the machine. The file encryption started at 04:03:18.__
+
 The ransomware added an entry to the runkey, probably for persistence :
 
 ```bash
 timeline.csv
 2021-01-07|04:05:58.398303|runKey|Bytelocker: "C:\Users\arthur\AppData\Roaming\{86ff23e9-f09f-4ca4-ae3d-41fe11fbabcd}.exe"
 ```
-As we saw earlier in this article, it looks like the attacker had trouble with that ransomware. 
-So he decided to launch Another one XD
+__On the 2021-01-07 at 04:05:58, a entry in the registry key "run" was created as a way of persistance.__
+
+---
+
+__On the 2021-01-07 from 03:56 to 04:05, the attacker successfuly executed the ransomware Bytelocker on the machine and created a persistance for it in the registry key.__
+
+---
+
 
 ### Matrix Ransomware
-
 
 We can spot the creation of multiple scripts, binary and scheduled tasks :
 
@@ -616,13 +621,14 @@ timeline.csv
 ```
 
 By looking at the MD5 of the file ATXO3fAc.exe, we can see that it is Nthandle.exe from sysinternals.
-It's a legit tool that allow the user to close any handle on a file.
-A Windows file handle is a crucial mechanism that enables programs to interact with files in a structured and secure manner.
 
 ```bash
 md5sum ATXO3fAc.exe 
 2f5b509929165fc13ceab9393c3b911d  ATXO3fAc.exe
 ```
+
+It's a legit tool that allow the user to close any handle on a file.
+A Windows file handle is a crucial mechanism that enables programs to interact with files in a structured and secure manner.
 
 The binary is linked to the script CEp5f0ji.bat
 
@@ -637,10 +643,9 @@ FOR /F "UseBackQ Tokens=3,6 delims=: " %%I IN (`ATXO3fAc.exe -accepteula %FN% -n
 This script grants the current user full control over a specified file and takes ownership of it.
 Then it use the binary ATXO3fAc.exe (Nthandle.exe) to close any handle related to the file.
 
-**To sum up**:
-
 This script allow the attacker deal with file permission and handles as they could prevent file encryption.
 
+__On the 2021-01-07 at 04:20:51, the attacker successfully deployed a batch script and the executable nthandle.exe renamed ATXO3fAc.exe__
 
 The file bad_3F79A31A837D5316.txt contain a list of file and exe, it was probably used to feed the script CEp5f0ji.bat as it needs a fileName and path as an argument :
 
@@ -664,6 +669,7 @@ W.Run "cmd.exe /C schtasks /Run /I /tn DSHCA", 0, False
 This script creates a scheduled task named "DSHCA" that runs the batch file "M1nLSX9d.bat" every 5 minutes with the highest privileges.
 Then, it immediately runs the newly created task.
 
+__On the 2021-01-07 at 04:21:13, the attacker successfully created a scheduled task name DSHCA using a visual basic script__
 
 Here is the content of the file : M1nLSX9d.bat 
 
@@ -683,6 +689,8 @@ This script will:
 * Delete the file zTYfgvad.vbs we saw above.
 * Delete the DSHCA scheduled task we saw above.
 * Delete itself.
+
+__On the 2021-01-07 at 04:21:13, the attacker successfully deleted all shadow copy and backups using the scheduled task name DSHCA__
 
 
 In the MFT, a lot of file are created/modified and have the same naming patern : 
@@ -714,6 +722,11 @@ Hеllо!
 Sоrry, but wе hаvе tо infоrm yоu thаt duе tо sесurity issuеs, yоur sеrvеr wаs hасkеd. Plеаsе bе surе thаt yоur dаtа is nоt brоkеn. All yоur vаluаblе filеs wеrе еnсryptеd with strоng сryptо аlgоrithms AES-256+RSA-2048 аnd rеnаmеd. Yоu саn rеаd аbоut thеsе аlgоrithms in Gооglе. Yоur uniquе dесryptiоn kеy is sесurеly stоrеd оn оur sеrvеr аnd yоur dаtа саn bе dесryptеd fаst аnd sаfеly.
 [...]
 ```
+---
+
+__On the 2021-01-07 from 04:20:51 to 04:21:13, the attacker successfully used scripts to prepare file for encryption, deleted shadow copies and backups using a scheduled task and executed the ransomware.__
+
+---
 
 
 ## Stealing datas
@@ -732,6 +745,12 @@ It's a technique that is typically used to steal credentials from an AD database
 
 
 The file "NWcurdcz.exe" wasn't on the disk anymore so i couldn't investigate any further.
+
+---
+
+__On the 2021-01-07 at 04:19:41, the attacker successfully leverage ActiveDirectorySync.exe to steals important data from the victim.__
+
+---
 
 
 I can't find any other following action from the attacker.
@@ -762,18 +781,3 @@ This is the end of this article, I hope you enjoyed it !
 
 I'll be pleased to talk about it :)
 
-
-
-
-
-
-As we continue to browse our timeline we can find :
-```bash
-amcache.csv
-2021-01-07|03:24:40|mimikatz.exe|c:\users\public\mimikatz.exe|0006474843b18c8fcb1dda3a11ea33af7ed000000904|d5006bbcc79d52882acac909e7e9d9a4141af938d9f942981f5e0ae3bba5a62b
-```
-
-
-we have an entry name mimikatz.exe in the Amcache hive at 2021-01-07T03:24:40.
-
-I can't find any other action related to it, no entry in the MFT, no type3 connection related, no av flag, nothing. We saw earlier that the amcache dateTime was not correct so it might be the case here but i doubt it as it's in the timeframe of the attack.
