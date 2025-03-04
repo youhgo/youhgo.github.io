@@ -651,7 +651,7 @@ As we continue the investigation, we can spot the creation of the following bina
 2021-01-07|04:19:41.086045|shimcache|NWcurdcz.exe|C:\Users\Administrator\Documents\NWcurdcz.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
 ```
 
-It wasn't on the disk anymore so i could dig deeper.
+It wasn't on the disk anymore so i could not dig deeper.
 
 By Investigating further online, this binary looks like the initial payload of the ransomware. 
 
