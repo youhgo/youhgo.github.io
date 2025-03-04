@@ -644,8 +644,18 @@ __On the 2021-01-07 from 03:56 to 04:05, the attacker successfully executed the 
 
 ### Matrix Ransomware
 
-As we continue the investigation, we can spot the creation of multiple scripts, binaries and scheduled tasks :
 
+As we continue the investigation, we can spot the creation of the following binary:
+
+```bash
+2021-01-07|04:19:41.086045|shimcache|NWcurdcz.exe|C:\Users\Administrator\Documents\NWcurdcz.exe|e55e5b02ad40e9846a3cd83b00eec225fb98781c6f58a19697bf66a586f77672
+```
+
+It wasn't on the disk anymore so i could dig deeper.
+
+By Investigating further online, this binary looks like the initial payload of the ransomware. 
+
+It match the IOC name that match the regex : NW[a-zA-Z]{6}\.exe and seconds later, multiples scripts, binaries and scheduled tasks are created, they are characteristic of Matrix ransomware:
 ```bash
 timeline.csv
 2021-01-07|04:20:51.023841|mft|USNJRNL|N/A|USN_REASON_FILE_CREATE|ATXO3fAc.exe
@@ -693,7 +703,7 @@ This script allows the attacker to deal with file permission and handles as they
 __On the 2021-01-07 at 04:20:51, the attacker successfully deployed a batch script and the executable ATXO3fAc.exe__
 
 
-The file bad_3F79A31A837D5316.txt contain a list of file and exe, it was probably used to feed the script CEp5f0ji.bat as it needs a file name and file path as an argument :
+The file bad_3F79A31A837D5316.txt contain a list of file and exe, it's a log file for the ransomware :
 
 ```bash
 ATO_OPER: C:\ProgramData\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Application Data\Start Menu\Programs\Immersive Control Panel.lnk
@@ -776,11 +786,10 @@ It match 2 iocs related to Matrix ransomware families:
 
 __The attack methodologies and IOCs are caracteristic of Matrix's ransomwares__
 
-I couldn't find the ransomware
 
 ---
 
-__On the 2021-01-07 from 04:20:51 to 04:21:13, the attacker successfully used scripts to prepare file for encryption, deleted shadow copies and backups using a scheduled task and executed the ransomware.__
+__On the 2021-01-07 from 04:20:51 to 04:21:13, the attacker successfully used scripts to prepare file for encryption, deleted shadow copies and backups using a scheduled task and started the encryption of files.__
 
 ---
 
