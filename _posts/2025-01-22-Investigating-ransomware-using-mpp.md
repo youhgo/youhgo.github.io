@@ -7,7 +7,7 @@ classes: wide
 
 Usefull links:
 * MPP is available [here](https://github.com/youhgo/maximumPlasoTimelineParser)
-* DOPP is available [here](https://github.com/youhgo/DOPP)
+* [Windows Forensic Artefact Parser Project](https://github.com/youhgo/wfapp)
 
 In this article we will proceed to the investigation of a Windows machine infected with a ransomware, using the tool i made : Maximum Plaso Parser.
 
