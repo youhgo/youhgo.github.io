@@ -350,75 +350,9 @@ The service contains the following command line, let's explain :
 %COMSPEC% /Q /c echo cd  ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat & %COMSPEC% /Q /c %TEMP%\execute.bat & del %TEMP%\execute.bat
 ```
 
-
-#### The first part:
-
-Let’s inspect the first part of the commande line:
-```bash
-%COMSPEC% /Q /c echo cd  ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat
-```
-
-The begining part :
-```bash
-%COMSPEC% /Q /c echo
-```
-* %COMSPEC%: This environment variable typically points to the command interpreter (cmd.exe).
-* /Q: Runs the command interpreter in quiet mode.
-* /c: Executes the following command and then exits.
-* "echo":  This command is used to output text to the console or a file.
-
-
-__This command will run a terminal and then write some text into a file or console.__
-
-
-The middle part, this is the text that will be written to the file, it's also a command but it won't be executed yet :
-```bash
-cd ^> \\127.0.0.1\C$\__output 
-```
-* "cd": This command changes the current directory.
-* "^> \\127.0.0.1\C$\__output": This part specifies the new directory.
-* "\\127.0.0.1": Represents the local machine.
-* "C$"": This is an administrative share of the local C: drive. Accessing it requires elevated privileges.
-* "__output": This is the target subdirectory within the C: drive.
-
-
-__This command will be written into a file or console.__
-
-
-Finaly 
-```batch
-2^>^&1 > %TEMP%\execute.bat
-```
-* "2^>^&1": This redirects both standard error (2) and standard output (1) to the same location.
-* "\> %TEMP%\execute.bat": This redirects the output of the echo command to a file named execute.bat within the temporary directory (%TEMP%). This effectively creates a batch file.
-
-
-__To Sum up, the whole command will launch a terminal and creates a batch file named execute.bat in the temp directory, which when run, will write the current directory to \\127.0.0.1\C$\__output.__
-
-
-
-#### The second part :
-
-
-Let’s inspect the second pard of the commande line:
-```bash
-%COMSPEC% /Q /c %TEMP%\execute.bat & del %TEMP%\execute.bat|BTOBTO
-```
-* "%COMSPEC% /Q /c %TEMP%\execute.bat" : This cmd executes the execute.bat file that was just created.
-* "del %TEMP%\execute.bat": This deletes the temporary execute.bat file after it has been executed.
-* "BTOBTO" This part redirects the output of the entire command sequence to another process or file named "BTOBTO." The nature of "BTOBTO" is unknown from this command alone.
-
-
-__This command will execute then delete the batch file created previously.__
-
-
-
-
-**In conclusion, the full command will launch a terminal and create, then execute and finally delete a batch file named "execute.bat" in the temp directory. When run, the batch script will change the current directory to \\127.0.0.1\C$\__output.**
-
+This string `\\127.0.0.1\C$\__output 2^>^&1` is typical of tool like Impacket wmiexec.py. This tool use wmi to create a single new process "cmd.exe" with a cmdline argument (here is `cd`). But beacause of that, the attacker cannot see the result of the commande. So the tool  redirects the output to a file named `__output` on the C$ administrative share of the localhost.
 
 ### Anti Virus hits
-
 
 Windows defender detected and blocked some threats;
 Windows Defender Event log ID 1116 register when a threat is detected and Event log ID 1117 log the action performed in reaction to the previously detected threat.
