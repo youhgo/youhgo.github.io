@@ -230,7 +230,7 @@ $existing = $usernames | Where-Object {
 }
 ```
 
-1. If not, it creates it and adds it to the Admin and RDP groups:
+2. If not, it creates it and adds it to the Admin and RDP groups:
 
 ```bash  
 if (-not $existing) {
@@ -266,14 +266,16 @@ $usernames = @("svc_netupd", "svc_dns", "sys_helper", "WinTelemetry", "UpdaterSv
 On Windows, how do we get information about users?
 
 We have the SAM database:
-> The Windows SAM base is a Registry key that stores configuration and security information for the Security Accounts Manager (SAM) database, which contains local user accounts and password hashes on a Windows system.
+```
+The Windows SAM base is a Registry key that stores configuration and security information for the Security Accounts Manager (SAM) database, which contains local user accounts and password hashes on a Windows system.
+```
 
 We have Security EVTX logs:
 - Event ID 4720: A user account was created.
 - Event ID 5136: Directory Service Changes
 
 WAPP does parse those artifacts; we have files named:
-- `SAM_yarp.jsonl`: Dump of SAM DB
+- `SAM_yarp.jsonl`: Dump of SAM Database
 - `user_modification.csv`: Tracks any User Modification
 
 The script will try to create the User: `svc_netupd` at first, so we will grep for it as it does not likely already exist:
@@ -318,8 +320,8 @@ Let's check out the code that generates the password:
 
 The script uses the cmdlet `Get-Date` to get timestamp information and then concatenates it to the string `"Watson_"`.
 
-Let's check out the `Get-Date` documentation:
-from Microsoft:
+Let's check out the `Get-Date` documentation from Microsoft:
+
 ```
 The Get-Date cmdlet gets a DateTime object that represents the current date or a date that you specify. [...]
 ```
